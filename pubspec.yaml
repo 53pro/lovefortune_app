@@ -1,0 +1,52 @@
+name: lovefortune_app
+description: "오늘 우리는 - AI 운세 기반의 커플 관계 조언 앱"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI & Icons
+  cupertino_icons: ^1.0.2
+
+  # State Management (상태 관리)
+  flutter_riverpod: ^2.4.9
+
+  # Firebase (백엔드)
+  firebase_core: ^2.25.4
+  firebase_auth: ^4.17.4
+  cloud_firestore: ^4.15.4
+
+  # Google AdMob (광고)
+  google_mobile_ads: ^4.0.0
+
+  # Network (AI API 통신)
+  http: ^1.2.0
+
+  # 구글 로그인
+  google_sign_in: ^6.2.1
+
+  # 로깅 라이브러리 (추가)
+  logger: ^2.0.2+1
+  # .env 파일을 사용하기 위한 라이브러리 (추가)
+  flutter_dotenv: ^5.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+
+  # assets 경로를 수정합니다.
+  # 디렉토리(assets/images/) 대신 특정 파일(assets/images/google_logo.png)을
+  # 명시하는 것이 더 안정적입니다.
+  assets:
+    - assets/images/google_logo.png
+    # .env 파일을 애셋으로 등록합니다. (중요)
+    - .env

@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "383709113689",
+    "project_id": "lovefortune-d6ca9",
+    "storage_bucket": "lovefortune-d6ca9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:383709113689:android:8b12b1f0d7bdab9547f048",
+        "android_client_info": {
+          "package_name": "com.thehama.lovefortune"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "383709113689-9hf22t27tuedq32lsepil09jss7oj28f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBWMlvGcrFkL68ZRhLQ9MOYiY8dxUqONqM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "383709113689-9hf22t27tuedq32lsepil09jss7oj28f.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "383709113689-35e487sjau5m842g54s3539oubeuee1q.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.lovefortuneApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
