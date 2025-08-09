@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lovefortune_app/features/home/home_viewmodel.dart';
-import 'package:lovefortune_app/features/settings/settings_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -15,10 +14,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // 스트리밍 함수 대신 일반 함수를 호출하도록 수정합니다.
-      ref
-          .read(homeViewModelProvider.notifier)
-          .fetchHoroscope('1995-05-15', '1996-08-20');
+      ref.read(homeViewModelProvider.notifier).fetchHoroscope();
     });
   }
 
@@ -30,11 +26,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('오늘 우리는'),
+        actions: [
+          // '운명 새로고침' 버튼으로 변경합니다.
+          IconButton(
+            icon: const Icon(Icons.casino_outlined),
+            tooltip: '운명 새로고침',
+            onPressed: () {
+              // TODO: 여기에 리워드 광고 보기 로직을 추가합니다.
+              // 광고 시청이 완료되면 아래 fetchHoroscope 함수를 호출합니다.
+              viewModel.fetchHoroscope();
+            },
+          ),
+        ],
       ),
       body: SafeArea(
+        // 기존의 아래로 당겨서 새로고침하는 기능은 유지합니다.
         child: RefreshIndicator(
-          // 새로고침 시에도 일반 함수를 호출하도록 수정합니다.
-          onRefresh: () => viewModel.fetchHoroscope('1995-05-15', '1996-08-20'),
+          onRefresh: () => viewModel.fetchHoroscope(),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             child: Padding(

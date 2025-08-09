@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:lovefortune_app/features/tips/tips_viewmodel.dart'; // ViewModel (다음 단계에서 생성)
+import 'package:lovefortune_app/features/tips/tips_viewmodel.dart';
 
 class TipsScreen extends ConsumerStatefulWidget {
   const TipsScreen({super.key});
@@ -13,24 +13,34 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
   @override
   void initState() {
     super.initState();
-    // TODO: 화면이 처음 로드될 때 ViewModel의 fetchTips 함수 호출
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(tipsViewModelProvider.notifier).fetchTips('1995-05-15', '1996-08-20');
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    // TODO: ViewModel의 상태를 watch하여 UI 업데이트
+    final viewModel = ref.read(tipsViewModelProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('관계 팁'),
+        actions: [
+          // '팁 새로고침' 버튼으로 변경합니다.
+          IconButton(
+            icon: const Icon(Icons.casino_outlined),
+            tooltip: '팁 새로고침',
+            onPressed: () {
+              // TODO: 여기에 리워드 광고 보기 로직을 추가합니다.
+              viewModel.fetchTips('1995-05-15', '1996-08-20');
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            // --- 여기에 ViewModel과 연결된 카드들이 들어갑니다 ---
-
-            // 예시 UI (데이터 연결 전)
             _buildRelationshipGuideCard(),
             const SizedBox(height: 16),
             _buildWeeklyQuestionCard(),
@@ -41,9 +51,6 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
       ),
     );
   }
-
-  // 아래는 UI 구조를 보여주기 위한 예시 위젯들입니다.
-  // 실제로는 ViewModel의 데이터로 채워져야 합니다.
 
   Widget _buildRelationshipGuideCard() {
     return Card(
