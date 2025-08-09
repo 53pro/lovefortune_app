@@ -15,9 +15,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // 스트리밍 함수 대신 일반 함수를 호출하도록 수정합니다.
       ref
           .read(homeViewModelProvider.notifier)
-          .fetchHoroscope('1995-05-15', '1996-08-20'); // 임시 생년월일
+          .fetchHoroscope('1995-05-15', '1996-08-20');
     });
   }
 
@@ -32,6 +33,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       body: SafeArea(
         child: RefreshIndicator(
+          // 새로고침 시에도 일반 함수를 호출하도록 수정합니다.
           onRefresh: () => viewModel.fetchHoroscope('1995-05-15', '1996-08-20'),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -66,7 +68,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
       ),
-      // BottomNavigationBar는 MainScreen으로 이동했으므로 여기서 제거합니다.
     );
   }
 

@@ -1,52 +1,121 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lovefortune_app/features/settings/partner_list_screen.dart'; // 파트너 목록 화면 import
+import 'package:lovefortune_app/features/settings/profile_edit_screen.dart';
 import 'package:lovefortune_app/features/settings/settings_viewmodel.dart';
+import 'package:lovefortune_app/core/theme/app_theme.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('설정'),
+        title: const Text('내 정보'),
       ),
       body: ListView(
         children: [
-          // 프로필 정보 수정 섹션
-          ListTile(
-            leading: const Icon(Icons.person_outline),
-            title: const Text('내 정보 수정'),
-            subtitle: const Text('이름, 생년월일을 수정합니다.'),
-            onTap: () {
-              // 내 정보 수정 화면으로 이동
-            },
+          const SizedBox(height: 20),
+          _buildSectionTitle('계정 정보'),
+          Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Theme.of(context).dividerColor),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.email_outlined, color: AppTheme.primaryColor),
+              title: const Text('이메일'),
+              subtitle: Text(user?.email ?? '로그인 정보 없음'),
+            ),
           ),
-          ListTile(
-            leading: const Icon(Icons.favorite_border),
-            title: const Text('상대방 정보 수정'),
-            subtitle: const Text('상대방의 이름, 생년월일을 수정합니다.'),
-            onTap: () {
-              // 상대방 정보 수정 화면으로 이동
-            },
+          const SizedBox(height: 20),
+          _buildSectionTitle('프로필 관리'),
+          Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Theme.of(context).dividerColor),
+            ),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.person_outline),
+                  title: const Text('내 정보 수정'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const ProfileEditScreen(profileType: ProfileType.me),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                ListTile(
+                  leading: const Icon(Icons.favorite_border),
+                  title: const Text('상대방 정보 관리'), // 텍스트 변경
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    // PartnerListScreen으로 이동하도록 수정
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const PartnerListScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
-          const Divider(),
-
-          // 계정 관리 섹션
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('로그아웃'),
-            onTap: () {
-              // ref.read를 사용하여 ViewModel의 함수를 호출합니다.
-              ref.read(settingsViewModelProvider.notifier).signOut();
-              // 2. 현재 화면을 닫아 AuthWrapper가 보여주는 화면으로 돌아갑니다.
-              // mounted 체크를 통해 위젯이 여전히 화면에 있는지 확인하는 것이 안전합니다.
-              if (context.mounted) {
-                Navigator.of(context).pop();
-              }
-            },
+          const SizedBox(height: 20),
+          _buildSectionTitle('앱 정보'),
+          Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Theme.of(context).dividerColor),
+            ),
+            child: Column(
+              children: [
+                const ListTile(
+                  leading: Icon(Icons.info_outline),
+                  title: Text('앱 버전'),
+                  trailing: Text('1.0.0'),
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                ListTile(
+                  leading: const Icon(Icons.logout, color: AppTheme.accentColor),
+                  title: const Text('로그아웃', style: TextStyle(color: AppTheme.accentColor)),
+                  onTap: () {
+                    ref.read(settingsViewModelProvider.notifier).signOut();
+                  },
+                ),
+              ],
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Colors.grey,
+        ),
       ),
     );
   }

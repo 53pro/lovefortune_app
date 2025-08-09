@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lovefortune_app/features/auth/auth_viewmodel.dart';
 import 'package:lovefortune_app/features/auth/sign_up_screen.dart'; // 새로 만든 화면 import
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -156,14 +157,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   Widget _buildSocialLoginButtons(AuthViewModel viewModel) {
-    return Center( // 버튼을 중앙에 배치하기 위해 Center 위젯 사용
+    return Center(
       child: IconButton(
         onPressed: () {
           viewModel.signInWithGoogle();
         },
-        // Image.network 대신 Image.asset을 사용하여 프로젝트 내부 이미지를 불러옵니다.
-        icon: Image.asset('assets/images/google_logo.png', height: 40),
-        iconSize: 50,
+        // Image.asset 대신 FaIcon 위젯을 사용합니다.
+        icon: const FaIcon(
+          FontAwesomeIcons.google,
+          color: Color(0xFFDB4437), // 구글 로고 색상
+        ),
+        iconSize: 40,
       ),
     );
   }

@@ -2,57 +2,63 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:lovefortune_app/core/models/horoscope_model.dart';
-import 'package:logger/logger.dart'; // logger 라이브러리 import
-import 'package:flutter_dotenv/flutter_dotenv.dart'; // .env 라이브러리 import
+import 'package:logger/logger.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:lovefortune_app/features/tips/relationship_tips_model.dart'; // import 구문 추가
 
-// 로거 인스턴스 생성
 final logger = Logger();
 final aiServiceProvider = Provider((ref) => AIService());
 
 class AIService {
   static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
-  // .env 파일에서 API 키를 불러옵니다. 키가 없다면 빈 문자열을 사용합니다.
   static final String _apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
 
   Future<HoroscopeModel> getHoroscope(String userBirth, String partnerBirth) async {
+    // 디버깅용 프롬프트 대신, 원래의 상세 프롬프트를 사용하도록 복원합니다.
     final prompt = _buildHoroscopePrompt(userBirth, partnerBirth);
-    logger.d('Gemini API 요청 프롬프트:\n$prompt'); // 프롬프트 내용 로그
+
+    final requestUrl = Uri.parse('$_baseUrl?key=$_apiKey');
+    final requestBody = jsonEncode({
+      'contents': [{'parts': [{'text': prompt}]}]
+    });
+
+    logger.d('--- Gemini API 요청 정보 (비스트리밍) ---');
+    logger.d('URL: $requestUrl');
+    logger.d('Body: $requestBody');
+    logger.d('------------------------------------');
 
     try {
       logger.i('Gemini API에 요청을 보냅니다...');
       final response = await http.post(
-        Uri.parse('$_baseUrl?key=$_apiKey'),
+        requestUrl,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'contents': [{'parts': [{'text': prompt}]}]
-        }),
+        body: requestBody,
       );
-      logger.i('Gemini API 응답 수신: Status Code ${response.statusCode}'); // 응답 코드 로그
+      logger.i('Gemini API 응답 수신: Status Code ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        logger.d('Gemini API 응답 내용:\n$data'); // 성공 응답 내용 로그
+        logger.d('Gemini API 응답 내용:\n$data');
 
         String content = data['candidates'][0]['content']['parts'][0]['text'];
         logger.d('AI 원본 응답 텍스트:\n$content');
 
-        // AI 응답에서 Markdown 코드 블록 마커(```json ... ```)와 불필요한 공백을 제거합니다.
         content = content.replaceAll('```json', '').replaceAll('```', '').trim();
         logger.d('정리된 JSON 텍스트:\n$content');
 
         final jsonContent = jsonDecode(content);
         return HoroscopeModel.fromJson(jsonContent);
       } else {
-        // API 에러 발생 시, 응답 내용을 상세히 로그로 남깁니다.
         logger.e('Gemini API 에러 응답: ${response.statusCode}\n${response.body}');
         throw Exception('AI 서버와 통신하는 데 실패했습니다: ${response.body}');
       }
     } catch (e) {
-      logger.e('Gemini API 요청 중 예외 발생:', error: e); // 네트워크 등 기타 예외 로그
+      logger.e('Gemini API 요청 중 예외 발생:', error: e);
       throw Exception('운세 데이터를 불러오는 중 오류가 발생했습니다: $e');
     }
   }
 
+  // 원래의 상세 프롬프트 함수를 다시 추가합니다.
   String _buildHoroscopePrompt(String userBirth, String partnerBirth) {
     return """
     ### #1. 역할 (Persona)
@@ -95,5 +101,19 @@ class AIService {
     - 사용자 생년월일: $userBirth
     - 파트너 생년월일: $partnerBirth
     """;
+  }
+
+  // 관계 팁을 요청하는 새로운 함수 추가
+  Future<RelationshipTipsModel> getRelationshipTips(String userBirth, String partnerBirth) async {
+    final prompt = _buildTipsPrompt(userBirth, partnerBirth);
+    // ... (getHoroscope와 유사한 API 호출 로직) ...
+    // 반환 값은 RelationshipTipsModel.fromJson(jsonContent)가 됩니다.
+    // 임시 반환
+    return RelationshipTipsModel(personalityAnalysis: '분석 내용', weeklyQuestion: '주간 질문');
+  }
+
+  String _buildTipsPrompt(String userBirth, String partnerBirth) {
+    // TODO: 관계 팁 생성을 위한 새로운 프롬프트 작성
+    return "두 사람의 관계 팁을 알려줘.";
   }
 }
