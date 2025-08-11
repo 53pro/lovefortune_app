@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // SystemNavigator를 사용하기 위해 import 합니다.
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:lovefortune_app/core/models/profile_model.dart';
 import 'package:lovefortune_app/features/home/home_viewmodel.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -10,6 +13,9 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  // 뒤로 가기 버튼을 마지막으로 누른 시간을 기록하기 위한 변수
+  DateTime? lastPressed;
+
   @override
   void initState() {
     super.initState();
@@ -23,54 +29,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final state = ref.watch(homeViewModelProvider);
     final viewModel = ref.read(homeViewModelProvider.notifier);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('오늘 우리는'),
-        actions: [
-          // '운명 새로고침' 버튼으로 변경합니다.
-          IconButton(
-            icon: const Icon(Icons.casino_outlined),
-            tooltip: '운명 새로고침',
-            onPressed: () {
-              // TODO: 여기에 리워드 광고 보기 로직을 추가합니다.
-              // 광고 시청이 완료되면 아래 fetchHoroscope 함수를 호출합니다.
-              viewModel.fetchHoroscope();
-            },
-          ),
-        ],
-      ),
-      body: SafeArea(
-        // 기존의 아래로 당겨서 새로고침하는 기능은 유지합니다.
-        child: RefreshIndicator(
-          onRefresh: () => viewModel.fetchHoroscope(),
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildCoupleInfoSection(),
-                  const SizedBox(height: 24),
-                  if (state.isLoading)
-                    const Center(heightFactor: 5, child: CircularProgressIndicator())
-                  else if (state.errorMessage != null)
-                    Center(heightFactor: 5, child: Text(state.errorMessage!))
-                  else if (state.horoscope != null)
-                      Column(
-                        children: [
-                          _buildHoroscopeCard(state),
-                          const SizedBox(height: 16),
-                          _buildAdviceCard(state),
-                          const SizedBox(height: 16),
-                          _buildNativeAdCard(),
-                          const SizedBox(height: 16),
-                          _buildDateCard(state),
-                        ],
-                      )
-                    else
-                      const Center(heightFactor: 5, child: Text('오늘의 운세를 확인해보세요!')),
-                ],
+    // Scaffold를 PopScope로 감싸서 뒤로 가기 이벤트를 제어합니다.
+    return PopScope(
+      canPop: false, // 기본적으로 뒤로 가기 동작을 막습니다.
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+
+        final now = DateTime.now();
+        final isWarning = lastPressed == null || now.difference(lastPressed!) > const Duration(seconds: 2);
+
+        if (isWarning) {
+          lastPressed = now;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('한 번 더 누르면 종료됩니다.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        } else {
+          // 2초 안에 다시 누르면 앱을 종료합니다.
+          SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('오늘 우리는'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.casino_outlined),
+              tooltip: '운명 새로고침',
+              onPressed: () {
+                viewModel.fetchHoroscope();
+              },
+            ),
+          ],
+        ),
+        body: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: () => viewModel.fetchHoroscope(),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildDateHeader(),
+                    _buildCoupleInfoSection(state),
+                    const SizedBox(height: 24),
+                    if (state.isLoading)
+                      const Center(heightFactor: 5, child: CircularProgressIndicator())
+                    else if (state.errorMessage != null)
+                      Center(heightFactor: 5, child: Text(state.errorMessage!))
+                    else if (state.horoscope != null)
+                        Column(
+                          children: [
+                            _buildHoroscopeCard(state),
+                            const SizedBox(height: 16),
+                            _buildAdviceCard(state),
+                            const SizedBox(height: 16),
+                            _buildNativeAdCard(),
+                            const SizedBox(height: 16),
+                            _buildDateCard(state),
+                          ],
+                        )
+                      else
+                        const Center(heightFactor: 5, child: Text('오늘의 운세를 확인해보세요!')),
+                  ],
+                ),
               ),
             ),
           ),
@@ -79,35 +105,76 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildCoupleInfoSection() {
+  // 오늘 날짜를 표시하는 위젯 (스타일 변경)
+  Widget _buildDateHeader() {
+    final today = DateTime.now();
+    final yearMonthDay = DateFormat('yyyy년 MM월 dd일').format(today);
+    final dayOfWeek = DateFormat('EEEE', 'ko_KR').format(today);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      margin: const EdgeInsets.only(bottom: 24.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFEAEBEE)),
+      ),
+      child: Center(
+        child: RichText(
+          text: TextSpan(
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[800],
+              fontFamily: 'Pretendard',
+            ),
+            children: <TextSpan>[
+              TextSpan(text: '$yearMonthDay '),
+              TextSpan(
+                text: dayOfWeek,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF5B86E5), // Primary color
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCoupleInfoSection(HomeState state) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _buildProfile('나', '코딩이', const Color(0xFF5B86E5)),
+        _buildProfile('나', state.myProfile, const Color(0xFF5B86E5)),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16.0),
           child: Icon(Icons.favorite, color: Color(0xFFFF8A8A), size: 28),
         ),
-        _buildProfile('너', '파트너', const Color(0xFFFF8A8A)),
+        _buildProfile('너', state.partnerProfile, const Color(0xFFFF8A8A)),
       ],
     );
   }
 
-  Widget _buildProfile(String title, String name, Color color) {
+  Widget _buildProfile(String title, ProfileModel? profile, Color color) {
     return Column(
       children: [
         CircleAvatar(
           radius: 32,
           backgroundColor: color,
-          child: Text(
+          backgroundImage: profile?.imageUrl != null
+              ? NetworkImage(profile!.imageUrl!)
+              : null,
+          child: profile?.imageUrl == null
+              ? Text(
             title,
-            style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold),
-          ),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          )
+              : null,
         ),
         const SizedBox(height: 8),
         Text(
-          name,
+          profile?.nickname ?? (title == '나' ? '나' : '상대방'),
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ],

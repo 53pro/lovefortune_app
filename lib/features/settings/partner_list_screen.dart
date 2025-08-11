@@ -2,29 +2,57 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lovefortune_app/core/theme/app_theme.dart';
 import 'package:lovefortune_app/features/settings/profile_edit_screen.dart';
+import 'package:lovefortune_app/features/settings/settings_viewmodel.dart';
+import 'package:intl/intl.dart';
 
-class PartnerListScreen extends ConsumerWidget {
+// 편집 모드를 관리하기 위해 StatefulWidget으로 변경합니다.
+class PartnerListScreen extends ConsumerStatefulWidget {
   const PartnerListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // TODO: ViewModel에서 파트너 목록 데이터를 불러와야 합니다.
-    final partners = [
-      {'nickname': '자기', 'birthdate': '1995년 5월 15일', 'isSelected': true},
-      {'nickname': '애기', 'birthdate': '1996년 8월 20일', 'isSelected': false},
-      {'nickname': '코딩이', 'birthdate': '1992년 1월 1일', 'isSelected': false},
-    ];
+  ConsumerState<PartnerListScreen> createState() => _PartnerListScreenState();
+}
+
+class _PartnerListScreenState extends ConsumerState<PartnerListScreen> {
+  // 편집 모드 상태를 관리하는 변수
+  bool _isEditMode = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final settingsState = ref.watch(settingsViewModelProvider);
+    final viewModel = ref.read(settingsViewModelProvider.notifier);
+    final partners = settingsState.partners;
+    final selectedPartnerId = settingsState.selectedPartnerId;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('상대방 정보 관리'),
+        actions: [
+          // 파트너가 있을 경우에만 '편집' 버튼을 보여줍니다.
+          if (partners.isNotEmpty)
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _isEditMode = !_isEditMode;
+                });
+              },
+              child: Text(_isEditMode ? '완료' : '편집'),
+            ),
+        ],
       ),
-      body: ListView.builder(
+      body: partners.isEmpty
+          ? const Center(
+        child: Text(
+          '등록된 상대방 정보가 없습니다.\n아래 + 버튼을 눌러 추가해주세요.',
+          textAlign: TextAlign.center,
+        ),
+      )
+          : ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: partners.length,
         itemBuilder: (context, index) {
           final partner = partners[index];
-          final isSelected = partner['isSelected'] as bool;
+          final isSelected = partner.id == selectedPartnerId;
 
           return Card(
             elevation: 0,
@@ -38,11 +66,32 @@ class PartnerListScreen extends ConsumerWidget {
             ),
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              leading: CircleAvatar(
+              leading: _isEditMode
+              // 편집 모드일 때 보여줄 삭제 버튼
+                  ? IconButton(
+                icon: const Icon(Icons.remove_circle, color: Colors.red),
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('삭제 확인'),
+                      content: Text("'${partner.nickname}' 님을 목록에서 삭제하시겠습니까?"),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('취소')),
+                        TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('삭제', style: TextStyle(color: Colors.red))),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    viewModel.deletePartner(partner.id);
+                  }
+                },
+              )
+              // 일반 모드일 때 보여줄 프로필 아바타
+                  : CircleAvatar(
                 backgroundColor: isSelected ? AppTheme.primaryColor : Colors.grey[300],
                 child: Text(
-                  // Object 타입을 String으로 명시적으로 캐스팅합니다.
-                  (partner['nickname'] as String)[0],
+                  partner.nickname.isNotEmpty ? partner.nickname[0] : '?',
                   style: TextStyle(
                     color: isSelected ? Colors.white : AppTheme.primaryColor,
                     fontWeight: FontWeight.bold,
@@ -50,22 +99,27 @@ class PartnerListScreen extends ConsumerWidget {
                 ),
               ),
               title: Text(
-                // Object 타입을 String으로 명시적으로 캐스팅합니다.
-                partner['nickname'] as String,
+                partner.nickname,
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              subtitle: Text(partner['birthdate'] as String), // Object 타입을 String으로 명시적으로 캐스팅합니다.
-              trailing: isSelected
+              subtitle: Text(DateFormat('yyyy년 MM월 dd일').format(partner.birthdate)),
+              trailing: isSelected && !_isEditMode
                   ? const Icon(Icons.check_circle, color: AppTheme.primaryColor)
-                  : const Icon(Icons.radio_button_unchecked),
+                  : const Icon(Icons.radio_button_unchecked, color: Colors.transparent), // 편집 모드일 때는 선택 표시 숨김
               onTap: () {
-                // TODO: ViewModel을 통해 현재 선택된 파트너를 변경하는 로직
+                if (!_isEditMode) {
+                  // 일반 모드에서만 파트너 선택 가능
+                  viewModel.setSelectedPartner(partner.id);
+                }
               },
               onLongPress: () {
                 // 길게 눌러서 수정 화면으로 이동
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => const ProfileEditScreen(profileType: ProfileType.partner),
+                    builder: (context) => ProfileEditScreen(
+                      profileType: ProfileType.partner,
+                      profile: partner,
+                    ),
                   ),
                 );
               },
@@ -75,7 +129,6 @@ class PartnerListScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // 새로운 파트너를 추가하기 위해 ProfileEditScreen으로 이동
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => const ProfileEditScreen(profileType: ProfileType.partner),

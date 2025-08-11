@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lovefortune_app/core/models/horoscope_model.dart';
-import 'package:lovefortune_app/core/models/profile_model.dart'; // ProfileModel import
+import 'package:lovefortune_app/core/models/profile_model.dart';
 import 'package:lovefortune_app/core/repositories/horoscope_repository.dart';
+import 'package:lovefortune_app/core/repositories/profile_repository.dart';
 import 'package:logger/logger.dart';
 
 final logger = Logger();
@@ -10,62 +11,69 @@ class HomeState {
   final bool isLoading;
   final HoroscopeModel? horoscope;
   final String? errorMessage;
+  final ProfileModel? myProfile;
+  final ProfileModel? partnerProfile;
 
   HomeState({
     this.isLoading = false,
     this.horoscope,
     this.errorMessage,
+    this.myProfile,
+    this.partnerProfile,
   });
 
   HomeState copyWith({
     bool? isLoading,
     HoroscopeModel? horoscope,
     String? errorMessage,
+    ProfileModel? myProfile,
+    ProfileModel? partnerProfile,
   }) {
     return HomeState(
       isLoading: isLoading ?? this.isLoading,
       horoscope: horoscope ?? this.horoscope,
       errorMessage: errorMessage ?? this.errorMessage,
+      myProfile: myProfile ?? this.myProfile,
+      partnerProfile: partnerProfile ?? this.partnerProfile,
     );
   }
 }
 
 class HomeViewModel extends Notifier<HomeState> {
-  late final HoroscopeRepository _repository;
+  // late final 변수들을 제거하여 LateInitializationError를 원천적으로 방지합니다.
 
   @override
   HomeState build() {
-    _repository = ref.read(horoscopeRepositoryProvider);
+    // build 메서드는 상태를 초기화하는 역할만 합니다.
     return HomeState();
   }
 
-  // 이제 함수는 파라미터를 받지 않고, 내부에서 프로필 정보를 가져와야 합니다.
   Future<void> fetchHoroscope() async {
-    state = state.copyWith(isLoading: true, errorMessage: null, horoscope: null);
-    logger.i('운세 데이터 가져오기 시작...');
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    logger.i('프로필 및 운세 데이터 가져오기 시작...');
 
     try {
-      // TODO: Firestore에서 실제 내 정보와 현재 선택된 파트너 정보를 가져오는 로직이 필요합니다.
-      // 지금은 테스트를 위해 더미 데이터를 사용합니다.
-      final myProfile = ProfileModel(
-          id: 'myUserId',
-          nickname: '나',
-          birthdate: DateTime(1995, 5, 15)
-      );
-      final partnerProfile = ProfileModel(
-          id: 'partnerId123',
-          nickname: '파트너',
-          birthdate: DateTime(1996, 8, 20)
-      );
+      // Repository들을 메서드 내에서 직접 ref.read를 통해 읽어옵니다.
+      // 이렇게 하면 provider가 초기화된 후에만 사용되므로 안전합니다.
+      final profileRepository = ref.read(profileRepositoryProvider);
+      final horoscopeRepository = ref.read(horoscopeRepositoryProvider);
 
-      // Repository에 ProfileModel 객체를 전달합니다.
-      final result = await _repository.getHoroscope(myProfile, partnerProfile);
+      final myProfile = await profileRepository.getMyProfile();
+      final partnerProfile = await profileRepository.getSelectedPartner();
+
+      if (myProfile == null || partnerProfile == null) {
+        throw Exception('프로필 정보가 없습니다. 설정에서 정보를 입력해주세요.');
+      }
+
+      state = state.copyWith(myProfile: myProfile, partnerProfile: partnerProfile);
+
+      final result = await horoscopeRepository.getHoroscope(myProfile, partnerProfile);
 
       state = state.copyWith(isLoading: false, horoscope: result);
       logger.i('운세 데이터 가져오기 성공!');
     } catch (e) {
-      logger.e('운세 데이터 가져오기 실패:', error: e);
-      state = state.copyWith(isLoading: false, errorMessage: '운세를 불러오는 데 실패했어요. 다시 시도해주세요.');
+      logger.e('데이터 가져오기 실패:', error: e);
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
     }
   }
 }

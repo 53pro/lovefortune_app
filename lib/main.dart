@@ -5,14 +5,17 @@ import 'package:lovefortune_app/features/auth/auth_wrapper.dart';
 import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:lovefortune_app/core/theme/app_theme.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // SharedPreferences import
-import 'package:lovefortune_app/core/repositories/horoscope_repository.dart'; // Provider를 override하기 위해 import
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:lovefortune_app/core/repositories/horoscope_repository.dart';
+import 'package:intl/date_symbol_data_local.dart'; // 날짜 초기화를 위해 import 합니다.
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
 
-  // SharedPreferences 인스턴스를 앱 시작 전에 미리 로드합니다.
+  // 한국어 날짜 형식을 사용하기 위해 초기화 코드를 추가합니다.
+  await initializeDateFormatting('ko_KR', null);
+
   final prefs = await SharedPreferences.getInstance();
 
   await Firebase.initializeApp(
@@ -21,8 +24,6 @@ void main() async {
 
   runApp(
     ProviderScope(
-      // overrides를 사용하여 sharedPreferencesProvider의 값을
-      // 미리 로드한 인스턴스로 지정합니다.
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
       ],

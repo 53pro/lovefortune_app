@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lovefortune_app/core/theme/app_theme.dart';
+import 'package:lovefortune_app/features/settings/settings_viewmodel.dart';
+import 'package:lovefortune_app/core/models/profile_model.dart';
 
-// 이 화면이 '내 정보'를 수정하는지 '상대방 정보'를 수정하는지 구분하기 위한 enum
 enum ProfileType { me, partner }
 
 class ProfileEditScreen extends ConsumerStatefulWidget {
   final ProfileType profileType;
+  final ProfileModel? profile;
 
   const ProfileEditScreen({
     super.key,
     required this.profileType,
+    this.profile,
   });
 
   @override
@@ -18,14 +21,16 @@ class ProfileEditScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
-  // 이름 컨트롤러를 제거합니다.
   final _nicknameController = TextEditingController();
   DateTime? _selectedDate;
 
   @override
   void initState() {
     super.initState();
-    // TODO: ViewModel에서 기존 프로필 정보를 불러와서 컨트롤러와 상태를 초기화하는 로직 추가
+    if (widget.profile != null) {
+      _nicknameController.text = widget.profile!.nickname;
+      _selectedDate = widget.profile!.birthdate;
+    }
   }
 
   @override
@@ -34,30 +39,13 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     super.dispose();
   }
 
-  // 날짜 선택 다이얼로그를 보여주는 함수
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
+      // 초기 날짜를 '선택된 날짜' 또는 '오늘로부터 20년 전'으로 설정합니다.
+      initialDate: _selectedDate ?? DateTime(DateTime.now().year - 20, DateTime.now().month, DateTime.now().day),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppTheme.primaryColor, // 헤더 배경색
-              onPrimary: Colors.white, // 헤더 글자색
-              onSurface: AppTheme.primaryColor, // 선택된 날짜 글자색
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: AppTheme.primaryColor, // 버튼 글자색
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
     if (picked != null && picked != _selectedDate) {
       setState(() {
@@ -66,10 +54,37 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     }
   }
 
+  void _saveProfile() {
+    final nickname = _nicknameController.text.trim();
+    if (nickname.isEmpty || _selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('모든 정보를 입력해주세요.')),
+      );
+      return;
+    }
+
+    final viewModel = ref.read(settingsViewModelProvider.notifier);
+    if (widget.profileType == ProfileType.me) {
+      viewModel.updateMyProfile(nickname, _selectedDate!);
+    } else {
+      if (widget.profile != null) {
+        final updatedPartner = ProfileModel(
+          id: widget.profile!.id,
+          nickname: nickname,
+          birthdate: _selectedDate!,
+        );
+        viewModel.updatePartner(updatedPartner);
+      } else {
+        viewModel.addPartner(nickname, _selectedDate!);
+      }
+    }
+    Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isMe = widget.profileType == ProfileType.me;
-    final title = isMe ? '내 정보 수정' : '상대방 정보 수정';
+    final title = isMe ? '내 정보 수정' : (widget.profile != null ? '상대방 정보 수정' : '상대방 정보 추가');
 
     return Scaffold(
       appBar: AppBar(
@@ -82,90 +97,60 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 20),
-              // 이름 입력 필드를 제거하고 애칭 필드만 남깁니다.
-              _buildTextField(
+              // --- 이미지 선택 UI 주석 처리 ---
+              /*
+              Center(
+                child: GestureDetector(
+                  onTap: () {
+                    final viewModel = ref.read(settingsViewModelProvider.notifier);
+                    viewModel.pickAndUploadImage(widget.profileType, partnerId: widget.profile?.id);
+                  },
+                  child: CircleAvatar(
+                    radius: 60,
+                    backgroundColor: Colors.grey[200],
+                    backgroundImage: widget.profile?.imageUrl != null
+                        ? NetworkImage(widget.profile!.imageUrl!)
+                        : null,
+                    child: widget.profile?.imageUrl == null
+                        ? Icon(Icons.camera_alt, size: 40, color: Colors.grey[400])
+                        : null,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 30),
+              */
+              TextField(
                 controller: _nicknameController,
-                labelText: '애칭',
-                icon: Icons.favorite_border,
+                decoration: const InputDecoration(
+                  labelText: '애칭',
+                  prefixIcon: Icon(Icons.favorite_border),
+                ),
               ),
               const SizedBox(height: 16),
-              _buildDateField(context),
+              InkWell(
+                onTap: () => _selectDate(context),
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: '생년월일',
+                    prefixIcon: Icon(Icons.calendar_today_outlined),
+                  ),
+                  child: Text(
+                    _selectedDate == null
+                        ? '날짜를 선택해주세요'
+                        : '${_selectedDate!.year}년 ${_selectedDate!.month}월 ${_selectedDate!.day}일',
+                  ),
+                ),
+              ),
               const Spacer(),
               ElevatedButton(
-                onPressed: () {
-                  // TODO: ViewModel의 저장 함수 호출
-                },
+                onPressed: _saveProfile,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
                 ),
                 child: const Text('저장하기', style: TextStyle(color: Colors.white)),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // 텍스트 필드를 위한 공용 위젯
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String labelText,
-    required IconData icon,
-  }) {
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: labelText,
-        prefixIcon: Icon(icon),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Theme.of(context).dividerColor),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Theme.of(context).dividerColor),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
-        ),
-      ),
-    );
-  }
-
-  // 날짜 선택 필드를 위한 위젯
-  Widget _buildDateField(BuildContext context) {
-    return InkWell(
-      onTap: () => _selectDate(context),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: '생년월일',
-          prefixIcon: const Icon(Icons.calendar_today_outlined),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Theme.of(context).dividerColor),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Theme.of(context).dividerColor),
-          ),
-        ),
-        child: Text(
-          _selectedDate == null
-              ? '날짜를 선택해주세요'
-              : '${_selectedDate!.year}년 ${_selectedDate!.month}월 ${_selectedDate!.day}일',
-          style: TextStyle(
-            fontSize: 16,
-            color: _selectedDate == null ? Theme.of(context).hintColor : null,
           ),
         ),
       ),
