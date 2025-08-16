@@ -1,27 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:lovefortune_app/core/constants/ad_constants.dart';
 import 'package:lovefortune_app/core/models/personality_report_model.dart';
-import 'package:lovefortune_app/core/models/profile_model.dart'; // ProfileModel을 사용하기 위해 import
+import 'package:lovefortune_app/core/models/profile_model.dart';
 
-class PersonalityReportScreen extends StatefulWidget {
-  final Future<PersonalityReportModel> reportFuture;
-  // 애칭을 표시하기 위해 프로필 정보를 전달받습니다.
+
+class PersonalityReportScreen extends ConsumerStatefulWidget {
+  final bool needsApiCall;
+  final PersonalityReportModel? cachedReport;
+  final Future<PersonalityReportModel>? reportFuture; // reportFuture 파라미터를 추가합니다.
   final ProfileModel myProfile;
   final ProfileModel partnerProfile;
 
   const PersonalityReportScreen({
     super.key,
-    required this.reportFuture,
+    required this.needsApiCall,
+    this.cachedReport,
+    this.reportFuture, // 생성자에 reportFuture를 추가합니다.
     required this.myProfile,
     required this.partnerProfile,
   });
 
   @override
-  State<PersonalityReportScreen> createState() => _PersonalityReportScreenState();
+  ConsumerState<PersonalityReportScreen> createState() => _PersonalityReportScreenState();
 }
 
-class _PersonalityReportScreenState extends State<PersonalityReportScreen> {
+class _PersonalityReportScreenState extends ConsumerState<PersonalityReportScreen> {
   RewardedAd? _rewardedAd;
   bool _isAdLoaded = false;
   bool _adWatched = false;
@@ -31,7 +36,16 @@ class _PersonalityReportScreenState extends State<PersonalityReportScreen> {
   @override
   void initState() {
     super.initState();
-    _loadRewardedAd();
+    // API 호출이 필요할 때만 광고를 로드합니다.
+    if (widget.needsApiCall) {
+      _loadRewardedAd();
+    }
+  }
+
+  @override
+  void dispose() {
+    _rewardedAd?.dispose();
+    super.dispose();
   }
 
   void _loadRewardedAd() {
@@ -68,6 +82,8 @@ class _PersonalityReportScreenState extends State<PersonalityReportScreen> {
       );
       _rewardedAd!.show(
         onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
+          // 광고 시청이 완료되면 화면 상태만 변경합니다.
+          // API 호출은 이미 이전 화면에서 시작되었습니다.
           setState(() {
             _adWatched = true;
           });
@@ -77,20 +93,17 @@ class _PersonalityReportScreenState extends State<PersonalityReportScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _rewardedAd?.dispose();
-    super.dispose();
-  }
+  // 이 함수는 더 이상 필요하지 않으므로 제거합니다.
+  // void _startFetchingReport() { ... }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('우리의 관계 설명서')),
       body: SafeArea(
-        child: _adWatched
-            ? _buildFutureContent()
-            : _buildAdPrompt(),
+        child: widget.needsApiCall && !_adWatched
+            ? _buildAdPrompt()
+            : _buildFutureContent(),
       ),
     );
   }
@@ -139,6 +152,11 @@ class _PersonalityReportScreenState extends State<PersonalityReportScreen> {
   }
 
   Widget _buildFutureContent() {
+    // 캐시된 데이터가 있으면 바로 표시합니다.
+    if (widget.cachedReport != null) {
+      return _buildContentView(widget.cachedReport!);
+    }
+    // API 호출이 필요한 경우 FutureBuilder를 사용합니다.
     return FutureBuilder<PersonalityReportModel>(
       future: widget.reportFuture,
       builder: (context, snapshot) {
@@ -151,7 +169,7 @@ class _PersonalityReportScreenState extends State<PersonalityReportScreen> {
         if (snapshot.hasData) {
           return _buildContentView(snapshot.data!);
         }
-        return const Center(child: Text('리포트를 불러올 수 없습니다.'));
+        return const Center(child: Text('리포트를 불러오는 중입니다...'));
       },
     );
   }
@@ -160,7 +178,6 @@ class _PersonalityReportScreenState extends State<PersonalityReportScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // 상단에 프로필 헤더를 추가합니다.
         _buildCoupleHeader(),
         const SizedBox(height: 16),
         _buildSection(
@@ -194,7 +211,6 @@ class _PersonalityReportScreenState extends State<PersonalityReportScreen> {
     );
   }
 
-  // 프로필 헤더를 생성하는 위젯 (추가)
   Widget _buildCoupleHeader() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -212,7 +228,6 @@ class _PersonalityReportScreenState extends State<PersonalityReportScreen> {
     );
   }
 
-  // 헤더에 사용될 프로필 위젯 (추가)
   Widget _buildProfile(ProfileModel profile, Color color) {
     return Column(
       children: [

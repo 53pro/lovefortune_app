@@ -2,24 +2,29 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lovefortune_app/core/models/conflict_topic_model.dart';
+import 'package:lovefortune_app/core/models/personality_report_model.dart';
+import 'package:lovefortune_app/core/models/profile_model.dart';
 import 'package:lovefortune_app/core/repositories/horoscope_repository.dart';
+import 'package:lovefortune_app/core/services/ai_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
-import 'package:intl/intl.dart';
 
 final logger = Logger();
 
 final tipsRepositoryProvider = Provider((ref) {
+  final aiService = ref.read(aiServiceProvider);
   final sharedPreferences = ref.watch(sharedPreferencesProvider);
-  return TipsRepository(FirebaseFirestore.instance, sharedPreferences);
+  return TipsRepository(FirebaseFirestore.instance, sharedPreferences, aiService);
 });
 
 class TipsRepository {
   final FirebaseFirestore _firestore;
   final SharedPreferences _prefs;
+  final AIService _aiService;
 
-  TipsRepository(this._firestore, this._prefs);
+  TipsRepository(this._firestore, this._prefs, this._aiService);
 
   int _getWeekOfYear(DateTime date) {
     final firstDayOfYear = DateTime(date.year, 1, 1);
@@ -84,7 +89,6 @@ class TipsRepository {
     logger.i('🔄 Firebase에서 새로운 갈등 해결 주제를 가져옵니다.');
     try {
       final querySnapshot = await _firestore.collection('conflict_topics').get();
-      // Firestore에서 가져온 문서의 개수와 내용을 직접 로그로 확인합니다.
       logger.d('Firestore에서 ${querySnapshot.docs.length}개의 문서를 찾았습니다.');
       if (querySnapshot.docs.isNotEmpty) {
         logger.d('첫 번째 문서 내용: ${querySnapshot.docs.first.data()}');
@@ -111,5 +115,36 @@ class TipsRepository {
       logger.e('Firebase에서 갈등 주제를 가져오는 중 에러 발생:', error: e);
       throw Exception('Firebase에서 갈등 주제를 가져오는 데 실패했습니다.');
     }
+  }
+
+  // 관계 설명서를 가져오는 함수 (캐싱 로직 추가)
+  Future<PersonalityReportModel> getPersonalityReport(ProfileModel myProfile, ProfileModel partnerProfile) async {
+    final myBirthString = DateFormat('yyyy-MM-dd').format(myProfile.birthdate);
+    final partnerBirthString = DateFormat('yyyy-MM-dd').format(partnerProfile.birthdate);
+
+    // 캐시된 데이터와 현재 조건을 비교합니다.
+    final cachedMyBirth = _prefs.getString('report_my_birth');
+    final cachedPartnerId = _prefs.getString('report_partner_id');
+    final cachedReportJson = _prefs.getString('report_data');
+
+    // 조건이 모두 일치하면 캐시된 데이터를 반환합니다.
+    if (cachedMyBirth == myBirthString &&
+        cachedPartnerId == partnerProfile.id &&
+        cachedReportJson != null) {
+      logger.i('✅ 캐시된 관계 설명서를 반환합니다.');
+      return PersonalityReportModel.fromJson(jsonDecode(cachedReportJson));
+    }
+
+    // 조건이 일치하지 않으면 API를 호출합니다.
+    logger.i('🔄 새로운 관계 설명서를 API로부터 가져옵니다.');
+    final report = await _aiService.getPersonalityReport(myBirthString, partnerBirthString);
+
+    // 새로 받아온 데이터를 캐시에 저장합니다.
+    await _prefs.setString('report_my_birth', myBirthString);
+    await _prefs.setString('report_partner_id', partnerProfile.id);
+    await _prefs.setString('report_data', jsonEncode(report.toJson())); // toJson 필요
+    logger.i('📥 새로운 관계 설명서를 캐시에 저장했습니다.');
+
+    return report;
   }
 }

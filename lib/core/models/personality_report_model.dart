@@ -1,5 +1,5 @@
-// --- lib/core/models/personality_report_model.dart (신규 생성) ---
-// 성향 분석 리포트의 데이터 구조를 정의합니다.
+// lib/core/models/personality_report_model.dart
+
 class PersonalityReportModel {
   final String myPersonalityTitle;
   final String myPersonalityDescription;
@@ -26,5 +26,18 @@ class PersonalityReportModel {
       relationshipSynergy: json['relationship_synergy'] as String? ?? '두 분의 시너지에 대해 알아보고 있습니다.',
       relationshipCaution: json['relationship_caution'] as String? ?? '두 분의 관계에서 주의할 점을 알아보고 있습니다.',
     );
+  }
+
+  // 객체를 Map<String, dynamic> 형태로 변환하는 toJson 메서드 (추가)
+  // 이 함수는 데이터를 휴대폰에 저장하기 위해 필요합니다.
+  Map<String, dynamic> toJson() {
+    return {
+      'my_personality_title': myPersonalityTitle,
+      'my_personality_description': myPersonalityDescription,
+      'partner_personality_title': partnerPersonalityTitle,
+      'partner_personality_description': partnerPersonalityDescription,
+      'relationship_synergy': relationshipSynergy,
+      'relationship_caution': relationshipCaution,
+    };
   }
 }

@@ -4,7 +4,8 @@ import 'package:lovefortune_app/core/models/profile_model.dart';
 import 'package:lovefortune_app/features/tips/tips_viewmodel.dart';
 import 'package:lovefortune_app/features/tips/personality_report_screen.dart';
 import 'package:lovefortune_app/core/models/conflict_topic_model.dart';
-import 'package:lovefortune_app/features/settings/settings_viewmodel.dart'; // SettingsViewModel을 import하여 프로필 정보에 접근합니다.
+import 'package:lovefortune_app/features/settings/settings_viewmodel.dart';
+import 'package:lovefortune_app/core/models/personality_report_model.dart'; // 이 import 구문을 추가합니다.
 
 class TipsScreen extends ConsumerStatefulWidget {
   const TipsScreen({super.key});
@@ -26,7 +27,6 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(tipsViewModelProvider);
     final viewModel = ref.read(tipsViewModelProvider.notifier);
-    // settingsViewModelProvider를 watch하여 프로필 정보를 가져옵니다.
     final settingsState = ref.watch(settingsViewModelProvider);
 
     return Scaffold(
@@ -52,14 +52,15 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
             const SizedBox(height: 16),
             _buildWeeklyQuestionCard(state.weeklyQuestion),
             const SizedBox(height: 16),
-            _buildConflictGuideCard(context, state.conflictTopics ?? []),
+            _buildConflictGuideCard(context, state.conflictTopics),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRelationshipGuideCard(BuildContext context, WidgetRef ref, SettingsState settingsState) {
+  Widget _buildRelationshipGuideCard(
+      BuildContext context, WidgetRef ref, SettingsState settingsState) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -71,19 +72,23 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('우리의 관계 설명서', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('우리의 관계 설명서',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Text('두 분의 타고난 성향을 분석하여 서로를 더 깊이 이해할 수 있도록 도와드려요.', style: TextStyle(color: Colors.grey[600])),
+            Text('두 분의 타고난 성향을 분석하여 서로를 더 깊이 이해할 수 있도록 도와드려요.',
+                style: TextStyle(color: Colors.grey[600])),
             const SizedBox(height: 16),
             ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
+                  final viewModel = ref.read(tipsViewModelProvider.notifier);
                   final myProfile = settingsState.myProfile;
                   ProfileModel? partnerProfile;
 
-                  // 선택된 파트너를 찾는 로직
-                  if (settingsState.selectedPartnerId != null && settingsState.partners.isNotEmpty) {
+                  if (settingsState.selectedPartnerId != null &&
+                      settingsState.partners.isNotEmpty) {
                     try {
-                      partnerProfile = settingsState.partners.firstWhere((p) => p.id == settingsState.selectedPartnerId);
+                      partnerProfile = settingsState.partners.firstWhere(
+                              (p) => p.id == settingsState.selectedPartnerId);
                     } catch (e) {
                       partnerProfile = null;
                     }
@@ -91,27 +96,37 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
                     partnerProfile = settingsState.partners.first;
                   }
 
-                  // myProfile과 partnerProfile이 모두 null이 아닌지 다시 한번 확인합니다.
                   if (myProfile != null && partnerProfile != null) {
-                    final reportFuture = ref.read(tipsViewModelProvider.notifier).fetchPersonalityReport();
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => PersonalityReportScreen(
-                          reportFuture: reportFuture,
-                          myProfile: myProfile,
-                          // null 체크가 완료되었으므로 ! 연산자를 사용하여 null이 아님을 명시합니다.
-                          partnerProfile: partnerProfile!,
+                    final checkResult = await viewModel.checkNeedsApiCall();
+
+                    Future<PersonalityReportModel>? reportFuture;
+                    if (checkResult.needsApiCall) {
+                      reportFuture = viewModel.fetchPersonalityReport();
+                    }
+
+                    if (mounted) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => PersonalityReportScreen(
+                            needsApiCall: checkResult.needsApiCall,
+                            cachedReport: checkResult.cachedReport,
+                            reportFuture: reportFuture,
+                            myProfile: myProfile,
+                            // null 체크가 완료되었으므로 ! 연산자를 사용하여 null이 아님을 명시합니다.
+                            partnerProfile: partnerProfile!,
+                          ),
                         ),
-                      ),
-                    );
+                      );
+                    }
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('프로필 정보가 없어 설명서를 볼 수 없습니다. 내 정보와 상대방 정보를 모두 등록해주세요.')),
+                      const SnackBar(
+                          content: Text(
+                              '프로필 정보가 없어 설명서를 볼 수 없습니다. 내 정보와 상대방 정보를 모두 등록해주세요.')),
                     );
                   }
                 },
-                child: const Text('광고 보고 자세히 보기')
-            ),
+                child: const Text('자세히 보기')),
           ],
         ),
       ),
@@ -127,12 +142,17 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            const Text('이번 주 질문', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+            const Text('이번 주 질문',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white)),
             const SizedBox(height: 12),
             Text(
               question ?? '질문을 불러오는 중입니다...',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 20, color: Colors.white.withOpacity(0.9)),
+              style:
+              TextStyle(fontSize: 20, color: Colors.white.withOpacity(0.9)),
             ),
           ],
         ),
@@ -140,7 +160,8 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
     );
   }
 
-  Widget _buildConflictGuideCard(BuildContext context, List<ConflictTopicModel> topics) {
+  Widget _buildConflictGuideCard(
+      BuildContext context, List<ConflictTopicModel> topics) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -152,7 +173,8 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('오늘의 갈등 해결 가이드', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('오늘의 갈등 해결 가이드',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             if (topics.isEmpty)
               const Padding(
@@ -172,7 +194,8 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
                     onTap: () {
                       // Navigator.of(context).push(
                       //   MaterialPageRoute(
-                      //     builder: (context) => ConflictGuideScreen(topic: topic.topic),
+                      //     builder: (context) =>
+                      //         ConflictGuideScreen(topic: topic.topic),
                       //   ),
                       // );
                     },
