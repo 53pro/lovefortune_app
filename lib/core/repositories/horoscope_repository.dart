@@ -3,24 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lovefortune_app/core/models/horoscope_model.dart';
 import 'package:lovefortune_app/core/models/profile_model.dart';
+import 'package:lovefortune_app/core/models/special_advice_model.dart';
 import 'package:lovefortune_app/core/services/ai_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
+import 'package:lovefortune_app/core/models/self_discovery_model.dart';
+import 'package:lovefortune_app/core/models/personality_report_model.dart';
+import 'package:lovefortune_app/core/models/conflict_topic_model.dart';
+import 'package:lovefortune_app/core/models/conflict_guide_model.dart';
 
 final logger = Logger();
 
-// FutureProvider 대신, SharedPreferences 인스턴스를 받는 간단한 Provider로 변경합니다.
-// 이 Provider는 main.dart에서 override되어 실제 값을 받습니다.
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
-  // 이 코드는 실행되지 않으며, override되지 않았을 경우 에러를 발생시킵니다.
   throw UnimplementedError();
 });
 
 final horoscopeRepositoryProvider = Provider((ref) {
   final aiService = ref.read(aiServiceProvider);
-  // 이제 watch를 사용해도 안전하게 SharedPreferences 인스턴스를 가져올 수 있습니다.
   final sharedPreferences = ref.watch(sharedPreferencesProvider);
-
   return HoroscopeRepository(aiService, sharedPreferences);
 });
 
@@ -32,15 +32,14 @@ class HoroscopeRepository {
 
   Future<HoroscopeModel> getHoroscope(ProfileModel myProfile, ProfileModel partnerProfile) async {
     final todayString = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final myBirthString = DateFormat('yyyy-MM-dd').format(myProfile.birthdate);
+    final partnerBirthString = DateFormat('yyyy-MM-dd').format(partnerProfile.birthdate);
 
     final cachedDate = _prefs.getString('cached_date');
     final cachedMyBirth = _prefs.getString('cached_my_birth');
     final cachedPartnerBirth = _prefs.getString('cached_partner_birth');
     final cachedPartnerId = _prefs.getString('cached_partner_id');
     final cachedHoroscopeJson = _prefs.getString('cached_horoscope');
-
-    final myBirthString = DateFormat('yyyy-MM-dd').format(myProfile.birthdate);
-    final partnerBirthString = DateFormat('yyyy-MM-dd').format(partnerProfile.birthdate);
 
     if (cachedDate == todayString &&
         cachedMyBirth == myBirthString &&
@@ -65,6 +64,14 @@ class HoroscopeRepository {
     return horoscope;
   }
 
+  // 스페셜 조언을 요청하는 새로운 함수
+  Future<SpecialAdviceModel> getSpecialAdvice(ProfileModel myProfile, ProfileModel partnerProfile) {
+    logger.i('Repository에서 AIService로 스페셜 조언 요청 전달...');
+    final myBirthString = DateFormat('yyyy-MM-dd').format(myProfile.birthdate);
+    final partnerBirthString = DateFormat('yyyy-MM-dd').format(partnerProfile.birthdate);
+    return _aiService.getSpecialAdvice(myBirthString, partnerBirthString);
+  }
+
   Future<void> clearHoroscopeCache() async {
     await _prefs.remove('cached_date');
     await _prefs.remove('cached_my_birth');
@@ -73,4 +80,26 @@ class HoroscopeRepository {
     await _prefs.remove('cached_horoscope');
     logger.w('🗑️ 운세 캐시가 삭제되었습니다.');
   }
+
+  // 자기 발견 팁을 요청하는 새로운 함수 추가
+  Future<SelfDiscoveryModel> getSelfDiscoveryTip(ProfileModel myProfile) {
+    final myBirthString = DateFormat('yyyy-MM-dd').format(myProfile.birthdate);
+    return _aiService.getSelfDiscoveryTip(myBirthString);
+  }
+
+  // 성향 분석 리포트를 요청하는 새로운 함수 (추가)
+  Future<PersonalityReportModel> getPersonalityReport(ProfileModel myProfile, ProfileModel partnerProfile) {
+    final myBirthString = DateFormat('yyyy-MM-dd').format(myProfile.birthdate);
+    final partnerBirthString = DateFormat('yyyy-MM-dd').format(partnerProfile.birthdate);
+    return _aiService.getPersonalityReport(myBirthString, partnerBirthString);
+  }
+
+  // 갈등 해결 가이드를 요청하는 새로운 함수 (반환 타입 수정)
+  Future<ConflictGuideModel> getConflictGuide(ProfileModel myProfile, ProfileModel partnerProfile, String topic) {
+    logger.i('HoroscopeRepository: AIService에 갈등 해결 가이드 요청 전달...');
+    final myBirthString = DateFormat('yyyy-MM-dd').format(myProfile.birthdate);
+    final partnerBirthString = DateFormat('yyyy-MM-dd').format(partnerProfile.birthdate);
+    return _aiService.getConflictGuide(myBirthString, partnerBirthString, topic);
+  }
+
 }

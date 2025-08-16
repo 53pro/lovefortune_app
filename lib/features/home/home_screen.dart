@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // SystemNavigator를 사용하기 위해 import 합니다.
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lovefortune_app/core/models/profile_model.dart';
 import 'package:lovefortune_app/features/home/home_viewmodel.dart';
+import 'package:lovefortune_app/features/self_discovery/self_discovery_screen.dart';
+import 'package:lovefortune_app/features/special_advice/special_advice_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -13,7 +15,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  // 뒤로 가기 버튼을 마지막으로 누른 시간을 기록하기 위한 변수
   DateTime? lastPressed;
 
   @override
@@ -29,15 +30,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final state = ref.watch(homeViewModelProvider);
     final viewModel = ref.read(homeViewModelProvider.notifier);
 
-    // Scaffold를 PopScope로 감싸서 뒤로 가기 이벤트를 제어합니다.
     return PopScope(
-      canPop: false, // 기본적으로 뒤로 가기 동작을 막습니다.
+      canPop: false,
       onPopInvoked: (didPop) {
         if (didPop) return;
-
         final now = DateTime.now();
         final isWarning = lastPressed == null || now.difference(lastPressed!) > const Duration(seconds: 2);
-
         if (isWarning) {
           lastPressed = now;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -47,7 +45,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           );
         } else {
-          // 2초 안에 다시 누르면 앱을 종료합니다.
           SystemNavigator.pop();
         }
       },
@@ -88,7 +85,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             const SizedBox(height: 16),
                             _buildAdviceCard(state),
                             const SizedBox(height: 16),
-                            _buildNativeAdCard(),
+                            // 기존 광고 카드 UI를 그대로 사용합니다.
+                            _buildNativeAdCard(context, state),
                             const SizedBox(height: 16),
                             _buildDateCard(state),
                           ],
@@ -105,11 +103,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // 오늘 날짜를 표시하는 위젯 (스타일 변경)
   Widget _buildDateHeader() {
     final today = DateTime.now();
-    final yearMonthDay = DateFormat('yyyy년 MM월 dd일').format(today);
-    final dayOfWeek = DateFormat('EEEE', 'ko_KR').format(today);
+    final formattedDate = DateFormat('yyyy년 MM월 dd일 EEEE', 'ko_KR').format(today);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       margin: const EdgeInsets.only(bottom: 24.0),
@@ -127,12 +123,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               fontFamily: 'Pretendard',
             ),
             children: <TextSpan>[
-              TextSpan(text: '$yearMonthDay '),
+              TextSpan(text: '${DateFormat('yyyy년 MM월 dd일').format(today)} '),
               TextSpan(
-                text: dayOfWeek,
+                text: DateFormat('EEEE', 'ko_KR').format(today),
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF5B86E5), // Primary color
+                  color: Color(0xFF5B86E5),
                 ),
               ),
             ],
@@ -250,7 +246,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                // 리워드 광고 로직 호출
+                if (state.myProfile != null && state.partnerProfile != null) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => SpecialAdviceScreen(
+                        myProfile: state.myProfile!,
+                        partnerProfile: state.partnerProfile!,
+                      ),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('프로필 정보가 없어 스페셜 조언을 볼 수 없습니다.')),
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF8A8A),
@@ -276,7 +285,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildNativeAdCard() {
+  // 기존 광고 카드 UI를 유지하되, 버튼의 동작을 수정합니다.
+  Widget _buildNativeAdCard(BuildContext context, HomeState state) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -308,7 +318,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {},
+                // 버튼의 onPressed 동작을 수정합니다.
+                onPressed: () {
+                  if (state.myProfile != null) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => SelfDiscoveryScreen(myProfile: state.myProfile!),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('내 정보가 없어 팁을 볼 수 없습니다.')),
+                    );
+                  }
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF5B86E5),
                   shape: RoundedRectangleBorder(

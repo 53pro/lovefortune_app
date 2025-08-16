@@ -42,6 +42,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
+  flutter_launcher_icons: ^0.13.1 # 이 부분을 추가합니다.
+
 
 flutter:
   uses-material-design: true
@@ -53,3 +55,9 @@ flutter:
     - assets/images/google_logo.png
     # .env 파일을 애셋으로 등록합니다. (중요)
     - .env
+
+flutter_launcher_icons:
+  android: "launcher_icon" # 안드로이드 아이콘 이름
+  ios: true # iOS 아이콘 생성 활성화
+  image_path: "assets/images/flutter_launcher_icons.png" # 1단계에서 준비한 이미지 경로
+  min_sdk_android: 21 # 안드로이드 최소 SDK 버전

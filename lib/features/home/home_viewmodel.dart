@@ -13,6 +13,7 @@ class HomeState {
   final String? errorMessage;
   final ProfileModel? myProfile;
   final ProfileModel? partnerProfile;
+  final bool isProfileIncomplete; // 프로필 미완성 상태 추가
 
   HomeState({
     this.isLoading = false,
@@ -20,6 +21,7 @@ class HomeState {
     this.errorMessage,
     this.myProfile,
     this.partnerProfile,
+    this.isProfileIncomplete = false, // 기본값은 false
   });
 
   HomeState copyWith({
@@ -28,6 +30,7 @@ class HomeState {
     String? errorMessage,
     ProfileModel? myProfile,
     ProfileModel? partnerProfile,
+    bool? isProfileIncomplete,
   }) {
     return HomeState(
       isLoading: isLoading ?? this.isLoading,
@@ -35,26 +38,23 @@ class HomeState {
       errorMessage: errorMessage ?? this.errorMessage,
       myProfile: myProfile ?? this.myProfile,
       partnerProfile: partnerProfile ?? this.partnerProfile,
+      isProfileIncomplete: isProfileIncomplete ?? this.isProfileIncomplete,
     );
   }
 }
 
 class HomeViewModel extends Notifier<HomeState> {
-  // late final 변수들을 제거하여 LateInitializationError를 원천적으로 방지합니다.
-
   @override
   HomeState build() {
-    // build 메서드는 상태를 초기화하는 역할만 합니다.
     return HomeState();
   }
 
   Future<void> fetchHoroscope() async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    // 상태를 초기화할 때 isProfileIncomplete도 초기화합니다.
+    state = state.copyWith(isLoading: true, errorMessage: null, isProfileIncomplete: false);
     logger.i('프로필 및 운세 데이터 가져오기 시작...');
 
     try {
-      // Repository들을 메서드 내에서 직접 ref.read를 통해 읽어옵니다.
-      // 이렇게 하면 provider가 초기화된 후에만 사용되므로 안전합니다.
       final profileRepository = ref.read(profileRepositoryProvider);
       final horoscopeRepository = ref.read(horoscopeRepositoryProvider);
 
@@ -62,7 +62,10 @@ class HomeViewModel extends Notifier<HomeState> {
       final partnerProfile = await profileRepository.getSelectedPartner();
 
       if (myProfile == null || partnerProfile == null) {
-        throw Exception('프로필 정보가 없습니다. 설정에서 정보를 입력해주세요.');
+        // Exception을 던지는 대신, isProfileIncomplete 상태를 true로 설정합니다.
+        logger.w('프로필 정보가 부족하여 설정 화면으로 유도합니다.');
+        state = state.copyWith(isLoading: false, isProfileIncomplete: true);
+        return; // 운세 로직을 더 이상 진행하지 않고 종료합니다.
       }
 
       state = state.copyWith(myProfile: myProfile, partnerProfile: partnerProfile);
@@ -73,7 +76,8 @@ class HomeViewModel extends Notifier<HomeState> {
       logger.i('운세 데이터 가져오기 성공!');
     } catch (e) {
       logger.e('데이터 가져오기 실패:', error: e);
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      final message = e.toString().replaceFirst('Exception: ', '');
+      state = state.copyWith(isLoading: false, errorMessage: message);
     }
   }
 }
