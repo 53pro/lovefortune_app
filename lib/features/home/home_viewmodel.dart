@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lovefortune_app/core/models/horoscope_model.dart';
 import 'package:lovefortune_app/core/models/profile_model.dart';
+import 'package:lovefortune_app/core/models/special_advice_model.dart'; // 스페셜 조언 모델 import
 import 'package:lovefortune_app/core/repositories/horoscope_repository.dart';
 import 'package:lovefortune_app/core/repositories/profile_repository.dart';
 import 'package:logger/logger.dart';
 
 final logger = Logger();
+
 
 class HomeState {
   final bool isLoading;
@@ -86,6 +88,21 @@ class HomeViewModel extends Notifier<HomeState> {
       final message = e.toString().replaceFirst('Exception: ', '');
       state = state.copyWith(isLoading: false, errorMessage: message);
     }
+  }
+  // 스페셜 조언을 미리 요청하고, Future를 반환하는 함수 (추가)
+  Future<SpecialAdviceModel> fetchSpecialAdvice() async {
+    logger.i('HomeViewModel: 스페셜 조언 미리 가져오기 시작...');
+    final profileRepository = ref.read(profileRepositoryProvider);
+    final horoscopeRepository = ref.read(horoscopeRepositoryProvider);
+
+    final myProfile = await profileRepository.getMyProfile();
+    final partnerProfile = await profileRepository.getSelectedPartner();
+
+    if (myProfile == null || partnerProfile == null) {
+      throw Exception('프로필 정보가 없어 스페셜 조언을 볼 수 없습니다.');
+    }
+
+    return horoscopeRepository.getSpecialAdvice(myProfile, partnerProfile);
   }
 }
 

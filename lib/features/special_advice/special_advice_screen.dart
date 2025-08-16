@@ -1,51 +1,161 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lovefortune_app/core/models/profile_model.dart';
 import 'package:lovefortune_app/core/models/special_advice_model.dart';
-import 'package:lovefortune_app/features/special_advice/special_advice_viewmodel.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:lovefortune_app/core/constants/ad_constants.dart';
 
-class SpecialAdviceScreen extends ConsumerStatefulWidget {
-  // 홈 화면에서 전달받을 프로필 정보
-  final ProfileModel myProfile;
-  final ProfileModel partnerProfile;
+// StatefulWidget으로 변경하여 광고 로딩 및 표시 상태를 관리합니다.
+class SpecialAdviceScreen extends StatefulWidget {
+  final Future<SpecialAdviceModel> adviceFuture;
 
   const SpecialAdviceScreen({
     super.key,
-    required this.myProfile,
-    required this.partnerProfile,
+    required this.adviceFuture,
   });
 
   @override
-  ConsumerState<SpecialAdviceScreen> createState() => _SpecialAdviceScreenState();
+  State<SpecialAdviceScreen> createState() => _SpecialAdviceScreenState();
 }
 
-class _SpecialAdviceScreenState extends ConsumerState<SpecialAdviceScreen> {
+class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
+  RewardedAd? _rewardedAd;
+  bool _isAdLoaded = false;
+  bool _adWatched = false;
+
+  // AdConstants에서 광고 유닛 ID를 가져옵니다.
+  final adUnitId = AdConstants.specialAdviceRewardedAdUnitId;
+
   @override
   void initState() {
     super.initState();
-    // 화면이 처음 로드될 때, 전달받은 프로필 정보로 스페셜 조언을 요청합니다.
-    // 이 코드가 빠져있어서 데이터 로딩이 시작되지 않았습니다.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(specialAdviceViewModelProvider.notifier)
-          .fetchSpecialAdvice(widget.myProfile, widget.partnerProfile);
-    });
+    _loadRewardedAd();
+  }
+
+  // 리워드 광고를 불러오는 함수
+  void _loadRewardedAd() {
+    RewardedAd.load(
+      adUnitId: adUnitId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          setState(() {
+            _rewardedAd = ad;
+            _isAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (LoadAdError error) {
+          setState(() {
+            _isAdLoaded = false;
+          });
+        },
+      ),
+    );
+  }
+
+  // 광고를 보여주는 함수
+  void _showRewardedAd() {
+    if (_rewardedAd != null) {
+      _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
+        onAdDismissedFullScreenContent: (ad) {
+          ad.dispose();
+          _loadRewardedAd(); // 다음을 위해 새 광고 로드
+        },
+        onAdFailedToShowFullScreenContent: (ad, error) {
+          ad.dispose();
+          _loadRewardedAd();
+        },
+      );
+      _rewardedAd!.show(
+        onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
+          // 사용자가 광고 시청을 완료했을 때
+          setState(() {
+            _adWatched = true;
+          });
+        },
+      );
+      _rewardedAd = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _rewardedAd?.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(specialAdviceViewModelProvider);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('오늘의 스페셜 조언'),
       ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : state.errorMessage != null
-          ? Center(child: Text(state.errorMessage!))
-          : state.advice != null
-          ? _buildContentView(state.advice!)
-          : const Center(child: Text('조언을 불러오는 중입니다...')),
+      // 광고 시청 여부에 따라 다른 UI를 보여줍니다.
+      body: _adWatched
+          ? _buildFutureContent() // 광고 시청 완료 후: 조언 내용 표시
+          : _buildAdPrompt(), // 광고 시청 전: 광고 보기 버튼 표시
+    );
+  }
+
+  // 광고 시청을 유도하는 UI
+  Widget _buildAdPrompt() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.lock_outline, size: 60, color: Colors.grey),
+            const SizedBox(height: 20),
+            const Text(
+              '비밀 조언이 잠겨있어요',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '짧은 광고를 시청하고\n오늘의 스페셜 조언을 확인해보세요!',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              // 광고가 로드되었을 때만 버튼 활성화
+              onPressed: _isAdLoaded ? _showRewardedAd : null,
+              icon: _isAdLoaded
+                  ? const Icon(Icons.slow_motion_video)
+                  : const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              label: Text(_isAdLoaded ? '광고 보고 조언 확인하기' : '광고 불러오는 중...'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF8A8A),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // FutureBuilder를 사용하여 조언 내용을 표시하는 UI
+  Widget _buildFutureContent() {
+    return FutureBuilder<SpecialAdviceModel>(
+      future: widget.adviceFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('오류: ${snapshot.error}'));
+        }
+        if (snapshot.hasData) {
+          return _buildContentView(snapshot.data!);
+        }
+        return const Center(child: Text('조언을 불러올 수 없습니다.'));
+      },
     );
   }
 

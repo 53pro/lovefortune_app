@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart'; // AdMob 라이브러리 import
 import 'package:intl/intl.dart';
+import 'package:lovefortune_app/core/constants/ad_constants.dart'; // 광고 상수 파일 import
 import 'package:lovefortune_app/core/models/profile_model.dart';
 import 'package:lovefortune_app/features/home/home_viewmodel.dart';
 import 'package:lovefortune_app/features/self_discovery/self_discovery_screen.dart';
@@ -16,6 +18,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   DateTime? lastPressed;
+  NativeAd? _nativeAd;
+  bool _isNativeAdLoaded = false;
 
   @override
   void initState() {
@@ -23,6 +27,54 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(homeViewModelProvider.notifier).fetchHoroscope();
     });
+    _loadNativeAd(); // 화면이 시작될 때 네이티브 광고를 불러옵니다.
+  }
+
+  @override
+  void dispose() {
+    _nativeAd?.dispose(); // 화면이 사라질 때 광고를 해제합니다.
+    super.dispose();
+  }
+
+  // 네이티브 광고를 불러오는 함수
+  void _loadNativeAd() {
+    _nativeAd = NativeAd(
+      adUnitId: AdConstants.homeNativeAdUnitId,
+      listener: NativeAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            _isNativeAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+        },
+      ),
+      request: const AdRequest(),
+      // 광고의 디자인을 우리 앱 스타일에 맞게 설정합니다.
+      nativeTemplateStyle: NativeTemplateStyle(
+        templateType: TemplateType.medium,
+        mainBackgroundColor: Colors.white,
+        cornerRadius: 16.0,
+        callToActionTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.white,
+          backgroundColor: const Color(0xFF5B86E5),
+          style: NativeTemplateFontStyle.bold,
+          size: 16.0,
+        ),
+        primaryTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.black,
+          style: NativeTemplateFontStyle.bold,
+          size: 16.0,
+        ),
+        secondaryTextStyle: NativeTemplateTextStyle(
+          textColor: Colors.grey,
+          style: NativeTemplateFontStyle.normal,
+          size: 14.0,
+        ),
+      ),
+    );
+    _nativeAd!.load();
   }
 
   @override
@@ -85,8 +137,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             const SizedBox(height: 16),
                             _buildAdviceCard(state),
                             const SizedBox(height: 16),
-                            // 기존 광고 카드 UI를 그대로 사용합니다.
-                            _buildNativeAdCard(context, state),
+                            // --- 네이티브 광고 섹션 ---
+                            if (_isNativeAdLoaded && _nativeAd != null)
+                              Container(
+                                height: 320, // 광고 템플릿에 맞는 높이
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: const Color(0xFFEAEBEE)),
+                                ),
+                                child: AdWidget(ad: _nativeAd!),
+                              ),
+                            if (_isNativeAdLoaded) const SizedBox(height: 16),
+                            // --- 자기 발견 카드 ---
+                            _buildSelfDiscoveryCard(context, state),
                             const SizedBox(height: 16),
                             _buildDateCard(state),
                           ],
@@ -245,16 +308,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 if (state.myProfile != null && state.partnerProfile != null) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => SpecialAdviceScreen(
-                        myProfile: state.myProfile!,
-                        partnerProfile: state.partnerProfile!,
+                  final viewModel = ref.read(homeViewModelProvider.notifier);
+                  final adviceFuture = viewModel.fetchSpecialAdvice();
+                  await Future.delayed(const Duration(seconds: 3));
+                  if (mounted) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => SpecialAdviceScreen(
+                          adviceFuture: adviceFuture,
+                        ),
                       ),
-                    ),
-                  );
+                    );
+                  }
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('프로필 정보가 없어 스페셜 조언을 볼 수 없습니다.')),
@@ -285,65 +352,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // 기존 광고 카드 UI를 유지하되, 버튼의 동작을 수정합니다.
-  Widget _buildNativeAdCard(BuildContext context, HomeState state) {
+  Widget _buildSelfDiscoveryCard(BuildContext context, HomeState state) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: Color(0xFFEAEBEE)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Sponsored', style: TextStyle(fontSize: 14, color: Colors.grey)),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12.0),
-              child: Image.network(
-                'https://placehold.co/600x300/5B86E5/FFFFFF?text=Awesome+Product',
-                errorBuilder: (context, error, stackTrace) => const SizedBox(
-                  height: 150,
-                  child: Center(child: Text('Image not available')),
+      child: InkWell(
+        onTap: () {
+          if (state.myProfile != null) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => SelfDiscoveryScreen(myProfile: state.myProfile!),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('내 정보가 없어 팁을 볼 수 없습니다.')),
+            );
+          }
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Row(
+            children: [
+              Icon(Icons.psychology_outlined, color: const Color(0xFF5B86E5), size: 32),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('새로운 나를 발견하는 시간', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 4),
+                    Text('오늘의 나를 위한 성장 팁 확인하기', style: TextStyle(color: Colors.grey)),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            const Text('새로운 나를 발견하는 시간', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            const Text('당신만을 위한 특별한 아이템을 만나보세요.', style: TextStyle(color: Colors.grey)),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                // 버튼의 onPressed 동작을 수정합니다.
-                onPressed: () {
-                  if (state.myProfile != null) {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => SelfDiscoveryScreen(myProfile: state.myProfile!),
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('내 정보가 없어 팁을 볼 수 없습니다.')),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF5B86E5),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  elevation: 0,
-                ),
-                child: const Text('자세히 보기', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ],
+              const Icon(Icons.chevron_right, color: Colors.grey),
+            ],
+          ),
         ),
       ),
     );
