@@ -13,7 +13,7 @@ class HomeState {
   final String? errorMessage;
   final ProfileModel? myProfile;
   final ProfileModel? partnerProfile;
-  final bool isProfileIncomplete; // 프로필 미완성 상태 추가
+  final bool isProfileIncomplete;
 
   HomeState({
     this.isLoading = false,
@@ -21,7 +21,7 @@ class HomeState {
     this.errorMessage,
     this.myProfile,
     this.partnerProfile,
-    this.isProfileIncomplete = false, // 기본값은 false
+    this.isProfileIncomplete = false,
   });
 
   HomeState copyWith({
@@ -50,7 +50,9 @@ class HomeViewModel extends Notifier<HomeState> {
   }
 
   Future<void> fetchHoroscope() async {
-    // 상태를 초기화할 때 isProfileIncomplete도 초기화합니다.
+    // API 호출 시간을 측정하기 위해 Stopwatch를 시작합니다.
+    final stopwatch = Stopwatch()..start();
+
     state = state.copyWith(isLoading: true, errorMessage: null, isProfileIncomplete: false);
     logger.i('프로필 및 운세 데이터 가져오기 시작...');
 
@@ -62,20 +64,25 @@ class HomeViewModel extends Notifier<HomeState> {
       final partnerProfile = await profileRepository.getSelectedPartner();
 
       if (myProfile == null || partnerProfile == null) {
-        // Exception을 던지는 대신, isProfileIncomplete 상태를 true로 설정합니다.
         logger.w('프로필 정보가 부족하여 설정 화면으로 유도합니다.');
         state = state.copyWith(isLoading: false, isProfileIncomplete: true);
-        return; // 운세 로직을 더 이상 진행하지 않고 종료합니다.
+        return;
       }
 
       state = state.copyWith(myProfile: myProfile, partnerProfile: partnerProfile);
 
       final result = await horoscopeRepository.getHoroscope(myProfile, partnerProfile);
 
+      // Stopwatch를 멈추고, 성공 시 소요 시간을 로그로 출력합니다.
+      stopwatch.stop();
+      logger.i('✅ 운세 데이터 가져오기 성공! (소요 시간: ${stopwatch.elapsedMilliseconds}ms)');
+
       state = state.copyWith(isLoading: false, horoscope: result);
-      logger.i('운세 데이터 가져오기 성공!');
     } catch (e) {
-      logger.e('데이터 가져오기 실패:', error: e);
+      // Stopwatch를 멈추고, 실패 시에도 소요 시간을 로그로 출력합니다.
+      stopwatch.stop();
+      logger.e('데이터 가져오기 실패: (소요 시간: ${stopwatch.elapsedMilliseconds}ms)', error: e);
+
       final message = e.toString().replaceFirst('Exception: ', '');
       state = state.copyWith(isLoading: false, errorMessage: message);
     }

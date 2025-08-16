@@ -211,6 +211,8 @@ class AIService {
     """;
   }
 
+  // 스페셜 조언 프롬프트를 더 명확하고 엄격하게 수정합니다.
+  // 스페셜 조언 프롬프트를 영어 키를 사용하도록 수정합니다.
   String _buildSpecialAdvicePrompt(String userBirth, String partnerBirth) {
     return """
     ### #1. 역할 (Persona)
@@ -220,25 +222,36 @@ class AIService {
     입력된 두 사람의 생년월일을 바탕으로, '우리 둘만의 비밀 코드'와 '미래를 살짝 엿보는 타임머신'이라는 두 가지 테마의 스페셜 조언을 생성하여 아래의 JSON 형식에 맞춰 출력합니다.
 
     ### #3. 지침 (Instructions)
-    1.  **synergy_point:** 오늘의 에너지 흐름을 분석하여, 두 사람의 시너지가 폭발할 구체적인 시간대(예: 오후 2시 ~ 4시)와 함께하면 좋은 활동을 제안해주세요.
-    2.  **conflict_warning:** 오늘 두 사람 사이에 발생할 수 있는 구체적인 갈등 주제(예: 금전 문제, 약속 시간)를 예측하고, 현명하게 피할 수 있는 방법을 알려주세요.
-    3.  **weekend_forecast:** 다가오는 주말의 애정운을 간략하게 예보해주세요. 긍정적이고 기대감을 주는 내용이어야 합니다.
-    4.  **monthly_lucky_day:** 다음 달, 두 사람의 관계에 특히 중요한 행운의 날짜를 하나만 짚어주세요.
+    1.  **synergy_point:** 오늘의 에너지 흐름을 분석하여, 두 사람의 시너지가 폭발할 구체적인 시간대와 함께하면 좋은 활동을 하나의 문장으로 합쳐서 제안해주세요.
+    2.  **conflict_warning:** 오늘 두 사람 사이에 발생할 수 있는 구체적인 갈등 주제와 현명하게 피할 수 있는 방법을 하나의 문장으로 합쳐서 알려주세요.
+    3.  **weekend_forecast:** 다가오는 주말의 애정운을 간략하게 한 문장으로 예보해주세요.
+    4.  **monthly_lucky_day:** 다음 달, 두 사람의 관계에 특히 중요한 행운의 날짜를 하나의 문장으로 짚어주세요.
 
     ### #4. 제약 조건 (Constraints)
     - 모든 답변은 구체적이고 흥미로워야 합니다.
     - 긍정적이고 희망적인 톤을 유지해주세요.
-    - 반드시 지정된 JSON 형식으로만 출력해야 합니다.
+    - **반드시 지정된 JSON 형식으로만 출력해야 하며, 모든 키(key)는 반드시 영어(secret_code, future_peek 등)로 작성해야 합니다.**
 
-    ### #5. 최종 요청 (Final Request)
-    이제 아래의 실제 입력 정보를 바탕으로, 위의 모든 규칙을 준수하여 JSON 형식의 스페셜 조언 콘텐츠만 생성해주세요. 다른 설명이나 Markdown 형식 없이 순수한 JSON 객체만 반환해야 합니다.
+    ### #5. JSON 출력 형식 예시 (Example)
+    {
+      "secret_code": {
+        "synergy_point": "...",
+        "conflict_warning": "..."
+      },
+      "future_peek": {
+        "weekend_forecast": "...",
+        "monthly_lucky_day": "..."
+      }
+    }
+
+    ### #6. 최종 요청 (Final Request)
+    이제 아래의 실제 입력 정보를 바탕으로, 위의 모든 규칙을 준수하여 JSON 형식의 스페셜 조언 콘텐츠만 생성해주세요.
 
     [입력]
     - 사용자 생년월일: $userBirth
     - 파트너 생년월일: $partnerBirth
     """;
   }
-
   // 자기 발견 팁 생성을 위한 새로운 프롬프트 (추가)
   String _buildSelfDiscoveryPrompt(String userBirth) {
     return """
