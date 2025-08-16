@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lovefortune_app/core/models/profile_model.dart';
-import 'package:lovefortune_app/features/tips/tips_viewmodel.dart';
-import 'package:lovefortune_app/features/tips/personality_report_screen.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:lovefortune_app/core/constants/ad_constants.dart';
 import 'package:lovefortune_app/core/models/conflict_topic_model.dart';
+import 'package:lovefortune_app/core/models/personality_report_model.dart';
+import 'package:lovefortune_app/core/models/profile_model.dart';
 import 'package:lovefortune_app/features/settings/settings_viewmodel.dart';
-import 'package:lovefortune_app/core/models/personality_report_model.dart'; // 이 import 구문을 추가합니다.
+import 'package:lovefortune_app/features/tips/conflict_guide_screen.dart';
+import 'package:lovefortune_app/features/tips/personality_report_screen.dart';
+import 'package:lovefortune_app/features/tips/tips_viewmodel.dart';
 
 class TipsScreen extends ConsumerStatefulWidget {
   const TipsScreen({super.key});
@@ -15,12 +18,45 @@ class TipsScreen extends ConsumerStatefulWidget {
 }
 
 class _TipsScreenState extends ConsumerState<TipsScreen> {
+  NativeAd? _nativeAd;
+  bool _isNativeAdLoaded = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(tipsViewModelProvider.notifier).fetchTips();
     });
+    _loadNativeAd();
+  }
+
+  @override
+  void dispose() {
+    _nativeAd?.dispose();
+    super.dispose();
+  }
+
+  void _loadNativeAd() {
+    _nativeAd = NativeAd(
+      adUnitId: AdConstants.tipsNativeAdUnitId,
+      listener: NativeAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            _isNativeAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+        },
+      ),
+      request: const AdRequest(),
+      nativeTemplateStyle: NativeTemplateStyle(
+        templateType: TemplateType.medium,
+        mainBackgroundColor: Colors.white,
+        cornerRadius: 16.0,
+      ),
+    );
+    _nativeAd!.load();
   }
 
   @override
@@ -52,7 +88,18 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
             const SizedBox(height: 16),
             _buildWeeklyQuestionCard(state.weeklyQuestion),
             const SizedBox(height: 16),
-            _buildConflictGuideCard(context, state.conflictTopics),
+            // --- 네이티브 광고 섹션 ---
+            if (_isNativeAdLoaded && _nativeAd != null)
+              Container(
+                height: 320,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFEAEBEE)),
+                ),
+                child: AdWidget(ad: _nativeAd!),
+              ),
+            if (_isNativeAdLoaded) const SizedBox(height: 16),
+            _buildConflictGuideCard(context, ref, state.conflictTopics),
           ],
         ),
       ),
@@ -112,7 +159,6 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
                             cachedReport: checkResult.cachedReport,
                             reportFuture: reportFuture,
                             myProfile: myProfile,
-                            // null 체크가 완료되었으므로 ! 연산자를 사용하여 null이 아님을 명시합니다.
                             partnerProfile: partnerProfile!,
                           ),
                         ),
@@ -161,7 +207,7 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
   }
 
   Widget _buildConflictGuideCard(
-      BuildContext context, List<ConflictTopicModel> topics) {
+      BuildContext context, WidgetRef ref, List<ConflictTopicModel> topics) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -192,12 +238,18 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
                     title: Text(topic.topic),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
-                      // Navigator.of(context).push(
-                      //   MaterialPageRoute(
-                      //     builder: (context) =>
-                      //         ConflictGuideScreen(topic: topic.topic),
-                      //   ),
-                      // );
+                      final guideFuture = ref.read(tipsViewModelProvider.notifier).fetchConflictGuide(topic.topic);
+
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => ConflictGuideScreen(
+                            topic: topic.topic,
+                            // TODO: ConflictGuideScreen에 'category' 파라미터를 추가한 후, 이 줄의 주석을 해제하세요.
+                            // category: topic.category,
+                            guideFuture: guideFuture,
+                          ),
+                        ),
+                      );
                     },
                   );
                 },

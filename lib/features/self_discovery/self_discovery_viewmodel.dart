@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lovefortune_app/core/models/profile_model.dart';
 import 'package:lovefortune_app/core/models/self_discovery_model.dart';
-import 'package:lovefortune_app/core/repositories/horoscope_repository.dart';
+import 'package:lovefortune_app/core/repositories/tips_repository.dart'; // HoroscopeRepository 대신 TipsRepository를 import
 
 class SelfDiscoveryState {
   final bool isLoading;
@@ -28,7 +28,8 @@ class SelfDiscoveryViewModel extends Notifier<SelfDiscoveryState> {
   Future<void> fetchSelfDiscoveryTip(ProfileModel myProfile) async {
     state = state.copyWith(isLoading: true);
     try {
-      final repo = ref.read(horoscopeRepositoryProvider);
+      // tipsRepositoryProvider를 통해 Repository를 읽어옵니다.
+      final repo = ref.read(tipsRepositoryProvider);
       final result = await repo.getSelfDiscoveryTip(myProfile);
       state = state.copyWith(isLoading: false, tip: result);
     } catch (e) {

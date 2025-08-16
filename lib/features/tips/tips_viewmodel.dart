@@ -1,12 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lovefortune_app/core/models/conflict_guide_model.dart';
 import 'package:lovefortune_app/core/models/conflict_topic_model.dart';
 import 'package:lovefortune_app/core/models/personality_report_model.dart';
+import 'package:lovefortune_app/core/models/profile_model.dart';
+import 'package:lovefortune_app/core/repositories/horoscope_repository.dart';
 import 'package:lovefortune_app/core/repositories/profile_repository.dart';
 import 'package:lovefortune_app/core/repositories/tips_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'package:lovefortune_app/core/repositories/horoscope_repository.dart';
 import 'package:logger/logger.dart';
 
 final logger = Logger();
@@ -45,7 +47,6 @@ class TipsState {
     );
   }
 }
-
 
 class TipsViewModel extends Notifier<TipsState> {
   late TipsRepository _tipsRepo;
@@ -105,7 +106,20 @@ class TipsViewModel extends Notifier<TipsState> {
     if (myProfile == null || partnerProfile == null) {
       throw Exception('프로필 정보가 필요합니다.');
     }
-    return _tipsRepo.getPersonalityReport(myProfile, partnerProfile);
+    return _horoscopeRepo.getPersonalityReport(myProfile, partnerProfile);
+  }
+
+  // 갈등 해결 가이드를 미리 요청하고, Future를 반환하는 함수
+  Future<ConflictGuideModel> fetchConflictGuide(String topic) async {
+    logger.i('TipsViewModel: 갈등 해결 가이드 미리 가져오기 시작...');
+    final myProfile = await _profileRepo.getMyProfile();
+    final partnerProfile = await _profileRepo.getSelectedPartner();
+
+    if (myProfile == null || partnerProfile == null) {
+      throw Exception('프로필 정보가 없어 가이드를 볼 수 없습니다.');
+    }
+
+    return _horoscopeRepo.getConflictGuide(myProfile, partnerProfile, topic);
   }
 }
 

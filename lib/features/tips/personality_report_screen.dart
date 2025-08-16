@@ -31,7 +31,7 @@ class _PersonalityReportScreenState extends ConsumerState<PersonalityReportScree
   bool _isAdLoaded = false;
   bool _adWatched = false;
 
-  final adUnitId = AdConstants.specialAdviceRewardedAdUnitId;
+  final adUnitId = AdConstants.personalityRewardAdUnitId;
 
   @override
   void initState() {

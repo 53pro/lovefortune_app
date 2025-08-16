@@ -5,12 +5,15 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lovefortune_app/core/models/profile_model.dart';
 import 'package:lovefortune_app/core/repositories/horoscope_repository.dart';
 import 'package:lovefortune_app/core/repositories/profile_repository.dart';
-import 'package:lovefortune_app/features/settings/profile_edit_screen.dart'; // ProfileType을 사용하기 위해 import 추가
-import 'package:logger/logger.dart'; // logger 라이브러리 import
+import 'package:lovefortune_app/features/auth/auth_providers.dart';
+import 'package:lovefortune_app/features/settings/profile_edit_screen.dart';
+import 'package:lovefortune_app/features/home/home_viewmodel.dart'; // HomeViewModel을 사용하기 위해 import 합니다.
+import 'package:logger/logger.dart';
 
-final logger = Logger(); // 로거 인스턴스 생성
+final logger = Logger();
+
 class SettingsState {
-  final bool isLoading; // 데이터를 불러오는 중인지 확인하는 상태
+  final bool isLoading;
   final ProfileModel? myProfile;
   final List<ProfileModel> partners;
   final String? selectedPartnerId;
@@ -46,9 +49,17 @@ class SettingsViewModel extends Notifier<SettingsState> {
   SettingsState build() {
     _profileRepo = ref.read(profileRepositoryProvider);
     _horoscopeRepo = ref.read(horoscopeRepositoryProvider);
-    // ViewModel이 처음 생성될 때 바로 데이터를 불러오도록 합니다.
     Future.microtask(() => loadProfileData());
-    return SettingsState(isLoading: true); // 초기 상태를 '로딩 중'으로 설정
+    return SettingsState(isLoading: true);
+  }
+
+  // 데이터 변경 후, 프로필 완성 여부와 홈 화면을 모두 갱신하는 helper 함수
+  Future<void> _reloadDataAndRefresh() async {
+    await loadProfileData();
+    // profileCompletenessProvider를 무효화하여 다시 실행하도록 합니다.
+    ref.invalidate(profileCompletenessProvider);
+    // HomeViewModel의 fetchHoroscope 함수를 호출하여 홈 화면 데이터를 갱신합니다.
+    ref.read(homeViewModelProvider.notifier).fetchHoroscope();
   }
 
   Future<void> signOut() async {
@@ -62,11 +73,6 @@ class SettingsViewModel extends Notifier<SettingsState> {
       final myProfile = await _profileRepo.getMyProfile();
       final partners = await _profileRepo.getPartners();
       final selectedPartner = await _profileRepo.getSelectedPartner();
-
-      logger.i('내 프로필 로드 결과: ${myProfile?.nickname ?? "데이터 없음"}');
-      logger.i('파트너 목록 로드 결과: ${partners.length}명');
-      logger.i('선택된 파트너 로드 결과: ${selectedPartner?.nickname ?? "데이터 없음"}');
-
       state = state.copyWith(
         isLoading: false,
         myProfile: myProfile,
@@ -80,23 +86,21 @@ class SettingsViewModel extends Notifier<SettingsState> {
     }
   }
 
-  // 이 함수의 정의에 {String? imageUrl} 부분을 추가해주세요.
   Future<void> updateMyProfile(String nickname, DateTime birthdate, {String? imageUrl}) async {
-    // Repository의 함수를 호출할 때 imageUrl을 그대로 전달합니다.
     await _profileRepo.updateMyProfile(nickname, birthdate, imageUrl: imageUrl);
     await _horoscopeRepo.clearHoroscopeCache();
-    await loadProfileData();
+    await _reloadDataAndRefresh();
   }
 
   Future<void> addPartner(String nickname, DateTime birthdate) async {
     await _profileRepo.addPartner(nickname, birthdate);
-    await loadProfileData();
+    await _reloadDataAndRefresh();
   }
 
   Future<void> updatePartner(ProfileModel updatedPartner) async {
     await _profileRepo.updatePartner(updatedPartner);
     await _horoscopeRepo.clearHoroscopeCache();
-    await loadProfileData();
+    await _reloadDataAndRefresh();
   }
 
   Future<void> deletePartner(String partnerId) async {
@@ -105,16 +109,16 @@ class SettingsViewModel extends Notifier<SettingsState> {
     }
     await _profileRepo.deletePartner(partnerId);
     await _horoscopeRepo.clearHoroscopeCache();
-    await loadProfileData();
+    await _reloadDataAndRefresh();
   }
 
   Future<void> setSelectedPartner(String partnerId) async {
     await _profileRepo.setSelectedPartner(partnerId);
     await _horoscopeRepo.clearHoroscopeCache();
-    await loadProfileData();
+    await _reloadDataAndRefresh();
   }
 
-  // 이미지 선택 및 업로드 함수
+  // 이미지 선택 및 업로드 함수 (현재 UI에서는 사용되지 않음)
   Future<void> pickAndUploadImage(ProfileType type, {String? partnerId}) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 50);
@@ -135,7 +139,6 @@ class SettingsViewModel extends Notifier<SettingsState> {
         );
         await updatePartner(updatedPartner);
       }
-      // 데이터가 변경되었으므로 다시 로드하여 UI에 즉시 반영
       await loadProfileData();
     }
   }

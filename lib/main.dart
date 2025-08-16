@@ -7,17 +7,14 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:lovefortune_app/core/theme/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lovefortune_app/core/repositories/horoscope_repository.dart';
-import 'package:intl/date_symbol_data_local.dart'; // 날짜 초기화를 위해 import 합니다.
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:flutter_localizations/flutter_localizations.dart'; // 로컬라이제이션 import
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
-
-  // 한국어 날짜 형식을 사용하기 위해 초기화 코드를 추가합니다.
   await initializeDateFormatting('ko_KR', null);
-
   final prefs = await SharedPreferences.getInstance();
-
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -38,9 +35,23 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '오늘 우리는',
+      title: '오늘우리는',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+
+      // --- 한글 설정을 추가합니다 ---
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('ko', 'KR'), // 한국어
+        // TODO: 향후 지원할 다른 언어들을 여기에 추가할 수 있습니다. (예: Locale('en', 'US'))
+      ],
+      locale: const Locale('ko'), // 앱의 기본 언어를 한국어로 설정
+      // --------------------------
+
       home: const AuthWrapper(),
     );
   }

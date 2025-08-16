@@ -36,22 +36,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
-  // 네이티브 광고를 불러오는 함수
+  // 네이티브 광고를 불러오는 함수에 로그를 추가합니다.
   void _loadNativeAd() {
+    logger.i('홈 화면 네이티브 광고 로드를 시작합니다...');
     _nativeAd = NativeAd(
       adUnitId: AdConstants.homeNativeAdUnitId,
       listener: NativeAdListener(
         onAdLoaded: (ad) {
+          logger.i('✅ 홈 화면 네이티브 광고 로드 성공!');
           setState(() {
             _isNativeAdLoaded = true;
           });
         },
         onAdFailedToLoad: (ad, error) {
+          logger.e('⛔ 홈 화면 네이티브 광고 로드 실패:', error: error);
           ad.dispose();
         },
       ),
       request: const AdRequest(),
-      // 광고의 디자인을 우리 앱 스타일에 맞게 설정합니다.
       nativeTemplateStyle: NativeTemplateStyle(
         templateType: TemplateType.medium,
         mainBackgroundColor: Colors.white,
@@ -155,7 +157,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ],
                         )
                       else
-                        const Center(heightFactor: 5, child: Text('오늘의 운세를 확인해보세요!')),
+                        const Center(heightFactor: 5, child: Text('내 정보에서 내 정보 수정및 상대방 정보 관리를 추가해주세요!')),
                   ],
                 ),
               ),

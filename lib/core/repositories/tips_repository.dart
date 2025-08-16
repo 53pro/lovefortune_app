@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:lovefortune_app/core/models/conflict_topic_model.dart';
 import 'package:lovefortune_app/core/models/personality_report_model.dart';
 import 'package:lovefortune_app/core/models/profile_model.dart';
+import 'package:lovefortune_app/core/models/self_discovery_model.dart'; // 자기 발견 모델 import
 import 'package:lovefortune_app/core/repositories/horoscope_repository.dart';
 import 'package:lovefortune_app/core/services/ai_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -147,4 +148,34 @@ class TipsRepository {
 
     return report;
   }
+  // 자기 발견 팁을 가져오는 함수 (캐싱 로직 추가)
+  Future<SelfDiscoveryModel> getSelfDiscoveryTip(ProfileModel myProfile) async {
+    final todayString = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final myBirthString = DateFormat('yyyy-MM-dd').format(myProfile.birthdate);
+
+    final cachedDate = _prefs.getString('self_tip_cached_date');
+    final cachedMyBirth = _prefs.getString('self_tip_my_birth');
+    final cachedTipJson = _prefs.getString('self_tip_data');
+
+    // 오늘 날짜와 내 생일 정보가 모두 일치하면 캐시된 데이터를 반환합니다.
+    if (cachedDate == todayString &&
+        cachedMyBirth == myBirthString &&
+        cachedTipJson != null) {
+      logger.i('✅ 캐시된 자기 발견 팁을 반환합니다.');
+      return SelfDiscoveryModel.fromJson(jsonDecode(cachedTipJson));
+    }
+
+    // 조건이 일치하지 않으면 API를 호출합니다.
+    logger.i('🔄 새로운 자기 발견 팁을 API로부터 가져옵니다.');
+    final tip = await _aiService.getSelfDiscoveryTip(myBirthString);
+
+    // 새로 받아온 데이터를 캐시에 저장합니다.
+    await _prefs.setString('self_tip_cached_date', todayString);
+    await _prefs.setString('self_tip_my_birth', myBirthString);
+    await _prefs.setString('self_tip_data', jsonEncode(tip.toJson()));
+    logger.i('📥 새로운 자기 발견 팁을 캐시에 저장했습니다.');
+
+    return tip;
+  }
+
 }

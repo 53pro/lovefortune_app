@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   # UI & Icons
   cupertino_icons: ^1.0.2
   # State Management (상태 관리)
@@ -32,11 +34,13 @@ dependencies:
   # 데이터 캐싱을 위한 라이브러리 (추가)
   shared_preferences: ^2.2.2
   # 날짜 포맷팅 라이브러리
-  intl: ^0.18.1
+  intl: ^0.20.2
   # 고유 ID 생성을 위한 라이브러리 (추가)
   uuid: ^4.3.3
   image_picker: ^1.0.7
   firebase_storage: ^11.6.0
+  # flutter_localizations 패키지를 추가합니다.
+
 
 dev_dependencies:
   flutter_test:

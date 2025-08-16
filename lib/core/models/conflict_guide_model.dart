@@ -1,5 +1,5 @@
-// --- lib/core/models/conflict_guide_model.dart (신규 생성) ---
-// AI가 생성할 구조화된 갈등 해결 가이드의 데이터 구조를 정의합니다.
+// lib/core/models/conflict_guide_model.dart
+
 class ConflictGuideModel {
   final String analysisForMe;
   final String analysisForPartner;
@@ -14,11 +14,19 @@ class ConflictGuideModel {
   });
 
   factory ConflictGuideModel.fromJson(Map<String, dynamic> json) {
+    // Helper 함수를 사용하여 어떤 타입의 값이 오더라도 안전하게 문자열로 변환합니다.
+    String _safeString(dynamic value, String defaultValue) {
+      if (value == null) return defaultValue;
+      if (value is String) return value;
+      // Map이나 다른 타입을 의미 있는 문자열로 변환합니다.
+      return value.toString();
+    }
+
     return ConflictGuideModel(
-      analysisForMe: json['analysis_for_me'] as String? ?? '분석 중...',
-      analysisForPartner: json['analysis_for_partner'] as String? ?? '분석 중...',
-      solutionProposal: json['solution_proposal'] as String? ?? '분석 중...',
-      dialogueExample: json['dialogue_example'] as String? ?? '분석 중...',
+      analysisForMe: _safeString(json['analysis_for_me'], '나의 성향 분석을 불러오는 데 실패했습니다.'),
+      analysisForPartner: _safeString(json['analysis_for_partner'], '상대방의 성향 분석을 불러오는 데 실패했습니다.'),
+      solutionProposal: _safeString(json['solution_proposal'], '관계 솔루션을 불러오는 데 실패했습니다.'),
+      dialogueExample: _safeString(json['dialogue_example'], '대화 예시를 불러오는 데 실패했습니다.'),
     );
   }
 }
