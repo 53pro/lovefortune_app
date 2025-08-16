@@ -1,14 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lovefortune_app/core/models/conflict_topic_model.dart';
+import 'package:lovefortune_app/core/models/personality_report_model.dart';
+import 'package:lovefortune_app/core/repositories/horoscope_repository.dart';
+import 'package:lovefortune_app/core/repositories/profile_repository.dart';
 import 'package:lovefortune_app/core/repositories/tips_repository.dart';
 import 'package:logger/logger.dart';
-import 'package:lovefortune_app/core/models/conflict_topic_model.dart';
 
 final logger = Logger();
 
 class TipsState {
   final bool isLoading;
   final String? weeklyQuestion;
-  final List<ConflictTopicModel> conflictTopics; // 갈등 주제 목록 상태 추가
+  final List<ConflictTopicModel> conflictTopics;
   final String? errorMessage;
 
   TipsState({
@@ -35,30 +38,39 @@ class TipsState {
 
 class TipsViewModel extends Notifier<TipsState> {
   late TipsRepository _tipsRepo;
+  late ProfileRepository _profileRepo;
+  late HoroscopeRepository _horoscopeRepo;
 
   @override
   TipsState build() {
     _tipsRepo = ref.read(tipsRepositoryProvider);
+    _profileRepo = ref.read(profileRepositoryProvider);
+    _horoscopeRepo = ref.read(horoscopeRepositoryProvider);
     return TipsState();
   }
 
   Future<void> fetchTips() async {
     state = state.copyWith(isLoading: true, errorMessage: null);
-    logger.i('TipsViewModel: 데이터 요청 시작...');
     try {
-      // 주간 질문과 갈등 주제를 함께 불러옵니다.
       final question = await _tipsRepo.getWeeklyQuestion();
       final topics = await _tipsRepo.getTodaysConflictTopics();
-
-      logger.d('TipsViewModel: Repository로부터 질문 수신 완료: $question');
-      logger.d('TipsViewModel: Repository로부터 갈등 주제 ${topics.length}개 수신 완료');
-
       state = state.copyWith(isLoading: false, weeklyQuestion: question, conflictTopics: topics);
-      logger.i('✅ TipsViewModel: 상태 업데이트 성공!');
     } catch (e) {
-      logger.e('TipsViewModel: 데이터 요청 실패', error: e);
       state = state.copyWith(isLoading: false, errorMessage: '팁을 불러오는 데 실패했습니다.');
     }
+  }
+
+  // 관계 설명서를 미리 요청하고, Future를 반환하는 함수 (추가)
+  Future<PersonalityReportModel> fetchPersonalityReport() async {
+    logger.i('TipsViewModel: 관계 설명서 미리 가져오기 시작...');
+    final myProfile = await _profileRepo.getMyProfile();
+    final partnerProfile = await _profileRepo.getSelectedPartner();
+
+    if (myProfile == null || partnerProfile == null) {
+      throw Exception('프로필 정보가 없어 관계 설명서를 볼 수 없습니다.');
+    }
+
+    return _horoscopeRepo.getPersonalityReport(myProfile, partnerProfile);
   }
 }
 

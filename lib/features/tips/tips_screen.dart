@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lovefortune_app/core/models/profile_model.dart';
 import 'package:lovefortune_app/features/tips/tips_viewmodel.dart';
 import 'package:lovefortune_app/features/tips/personality_report_screen.dart';
-import 'package:lovefortune_app/features/tips/conflict_guide_screen.dart';
-import 'package:lovefortune_app/core/models/conflict_topic_model.dart'; // 이 import 구문을 추가합니다.
+import 'package:lovefortune_app/core/models/conflict_topic_model.dart';
+import 'package:lovefortune_app/features/settings/settings_viewmodel.dart'; // SettingsViewModel을 import하여 프로필 정보에 접근합니다.
 
 class TipsScreen extends ConsumerStatefulWidget {
   const TipsScreen({super.key});
@@ -25,6 +26,8 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(tipsViewModelProvider);
     final viewModel = ref.read(tipsViewModelProvider.notifier);
+    // settingsViewModelProvider를 watch하여 프로필 정보를 가져옵니다.
+    final settingsState = ref.watch(settingsViewModelProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -45,11 +48,10 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            _buildRelationshipGuideCard(context),
+            _buildRelationshipGuideCard(context, ref, settingsState),
             const SizedBox(height: 16),
             _buildWeeklyQuestionCard(state.weeklyQuestion),
             const SizedBox(height: 16),
-            // state.conflictTopics가 null일 경우 빈 리스트([])를 사용하도록 수정합니다.
             _buildConflictGuideCard(context, state.conflictTopics ?? []),
           ],
         ),
@@ -57,7 +59,7 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
     );
   }
 
-  Widget _buildRelationshipGuideCard(BuildContext context) {
+  Widget _buildRelationshipGuideCard(BuildContext context, WidgetRef ref, SettingsState settingsState) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -75,11 +77,40 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
             const SizedBox(height: 16),
             ElevatedButton(
                 onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => const PersonalityReportScreen()),
-                  );
+                  final myProfile = settingsState.myProfile;
+                  ProfileModel? partnerProfile;
+
+                  // 선택된 파트너를 찾는 로직
+                  if (settingsState.selectedPartnerId != null && settingsState.partners.isNotEmpty) {
+                    try {
+                      partnerProfile = settingsState.partners.firstWhere((p) => p.id == settingsState.selectedPartnerId);
+                    } catch (e) {
+                      partnerProfile = null;
+                    }
+                  } else if (settingsState.partners.isNotEmpty) {
+                    partnerProfile = settingsState.partners.first;
+                  }
+
+                  // myProfile과 partnerProfile이 모두 null이 아닌지 다시 한번 확인합니다.
+                  if (myProfile != null && partnerProfile != null) {
+                    final reportFuture = ref.read(tipsViewModelProvider.notifier).fetchPersonalityReport();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => PersonalityReportScreen(
+                          reportFuture: reportFuture,
+                          myProfile: myProfile,
+                          // null 체크가 완료되었으므로 ! 연산자를 사용하여 null이 아님을 명시합니다.
+                          partnerProfile: partnerProfile!,
+                        ),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('프로필 정보가 없어 설명서를 볼 수 없습니다. 내 정보와 상대방 정보를 모두 등록해주세요.')),
+                    );
+                  }
                 },
-                child: const Text('자세히 보기')
+                child: const Text('광고 보고 자세히 보기')
             ),
           ],
         ),
@@ -139,12 +170,11 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
                     title: Text(topic.topic),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
-                      // 탭하면 ConflictGuideScreen으로 주제를 전달하며 이동합니다.
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => ConflictGuideScreen(topic: topic.topic),
-                        ),
-                      );
+                      // Navigator.of(context).push(
+                      //   MaterialPageRoute(
+                      //     builder: (context) => ConflictGuideScreen(topic: topic.topic),
+                      //   ),
+                      // );
                     },
                   );
                 },

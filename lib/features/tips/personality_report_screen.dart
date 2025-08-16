@@ -1,48 +1,168 @@
-// --- lib/features/tips/personality_report_screen.dart (수정) ---
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:lovefortune_app/core/constants/ad_constants.dart';
 import 'package:lovefortune_app/core/models/personality_report_model.dart';
-import 'package:lovefortune_app/features/tips/personality_report_viewmodel.dart';
+import 'package:lovefortune_app/core/models/profile_model.dart'; // ProfileModel을 사용하기 위해 import
 
-class PersonalityReportScreen extends ConsumerStatefulWidget {
-  const PersonalityReportScreen({super.key});
+class PersonalityReportScreen extends StatefulWidget {
+  final Future<PersonalityReportModel> reportFuture;
+  // 애칭을 표시하기 위해 프로필 정보를 전달받습니다.
+  final ProfileModel myProfile;
+  final ProfileModel partnerProfile;
+
+  const PersonalityReportScreen({
+    super.key,
+    required this.reportFuture,
+    required this.myProfile,
+    required this.partnerProfile,
+  });
 
   @override
-  ConsumerState<PersonalityReportScreen> createState() => _PersonalityReportScreenState();
+  State<PersonalityReportScreen> createState() => _PersonalityReportScreenState();
 }
 
-class _PersonalityReportScreenState extends ConsumerState<PersonalityReportScreen> {
+class _PersonalityReportScreenState extends State<PersonalityReportScreen> {
+  RewardedAd? _rewardedAd;
+  bool _isAdLoaded = false;
+  bool _adWatched = false;
+
+  final adUnitId = AdConstants.specialAdviceRewardedAdUnitId;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(personalityReportViewModelProvider.notifier).fetchReport();
-    });
+    _loadRewardedAd();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final state = ref.watch(personalityReportViewModelProvider);
-    return Scaffold(
-      appBar: AppBar(title: const Text('우리의 관계 설명서')),
-      // body를 SafeArea로 감싸서 시스템 UI와의 겹침을 방지합니다.
-      body: SafeArea(
-        child: state.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : state.errorMessage != null
-            ? Center(child: Text(state.errorMessage!))
-            : state.report != null
-            ? _buildContentView(state.report!)
-            : const Center(child: Text('리포트를 생성 중입니다...')),
+  void _loadRewardedAd() {
+    RewardedAd.load(
+      adUnitId: adUnitId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          setState(() {
+            _rewardedAd = ad;
+            _isAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (LoadAdError error) {
+          setState(() {
+            _isAdLoaded = false;
+          });
+        },
       ),
     );
   }
 
+  void _showRewardedAd() {
+    if (_rewardedAd != null) {
+      _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
+        onAdDismissedFullScreenContent: (ad) {
+          ad.dispose();
+          _loadRewardedAd();
+        },
+        onAdFailedToShowFullScreenContent: (ad, error) {
+          ad.dispose();
+          _loadRewardedAd();
+        },
+      );
+      _rewardedAd!.show(
+        onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
+          setState(() {
+            _adWatched = true;
+          });
+        },
+      );
+      _rewardedAd = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _rewardedAd?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('우리의 관계 설명서')),
+      body: SafeArea(
+        child: _adWatched
+            ? _buildFutureContent()
+            : _buildAdPrompt(),
+      ),
+    );
+  }
+
+  Widget _buildAdPrompt() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.lock_outline, size: 60, color: Colors.grey),
+            const SizedBox(height: 20),
+            const Text(
+              '관계 설명서가 잠겨있어요',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '짧은 광고를 시청하고\n두 분의 관계 설명서를 확인해보세요!',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: _isAdLoaded ? _showRewardedAd : null,
+              icon: _isAdLoaded
+                  ? const Icon(Icons.slow_motion_video)
+                  : const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              ),
+              label: Text(_isAdLoaded ? '광고 보고 설명서 확인' : '광고 불러오는 중...'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF5B86E5),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFutureContent() {
+    return FutureBuilder<PersonalityReportModel>(
+      future: widget.reportFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('오류: ${snapshot.error}'));
+        }
+        if (snapshot.hasData) {
+          return _buildContentView(snapshot.data!);
+        }
+        return const Center(child: Text('리포트를 불러올 수 없습니다.'));
+      },
+    );
+  }
+
   Widget _buildContentView(PersonalityReportModel report) {
-    // 각 섹션이 명확히 구분되도록 ListView의 구성을 변경합니다.
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // 상단에 프로필 헤더를 추가합니다.
+        _buildCoupleHeader(),
+        const SizedBox(height: 16),
         _buildSection(
           title: report.myPersonalityTitle,
           description: report.myPersonalityDescription,
@@ -74,7 +194,45 @@ class _PersonalityReportScreenState extends ConsumerState<PersonalityReportScree
     );
   }
 
-  // 각 섹션을 Card 위젯으로 감싸 시각적으로 분리합니다.
+  // 프로필 헤더를 생성하는 위젯 (추가)
+  Widget _buildCoupleHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildProfile(widget.myProfile, const Color(0xFF5B86E5)),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            child: Icon(Icons.favorite, color: Color(0xFFFF8A8A), size: 28),
+          ),
+          _buildProfile(widget.partnerProfile, const Color(0xFFFF8A8A)),
+        ],
+      ),
+    );
+  }
+
+  // 헤더에 사용될 프로필 위젯 (추가)
+  Widget _buildProfile(ProfileModel profile, Color color) {
+    return Column(
+      children: [
+        CircleAvatar(
+          radius: 32,
+          backgroundColor: color,
+          child: Text(
+            profile.nickname.isNotEmpty ? profile.nickname[0] : '?',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          profile.nickname,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSection({
     required String title,
     required String description,

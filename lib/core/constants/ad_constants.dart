@@ -31,4 +31,17 @@ class AdConstants {
       throw UnsupportedError('Unsupported platform');
     }
   }
+
+  // 홈 화면의 네이티브 광고 ID (추가)
+  static String get personalityAdUnitId {
+    // 안드로이드와 iOS에 맞는 테스트 광고 ID입니다.
+    // 배포 시에는 실제 AdMob 광고 단위 ID로 교체해야 합니다.
+    if (Platform.isAndroid) {
+      return 'ca-app-pub-1036680323060821/3630416291';
+    } else if (Platform.isIOS) {
+      return 'ca-app-pub-3940256099942544/3986624511';
+    } else {
+      throw UnsupportedError('Unsupported platform');
+    }
+  }
 }
