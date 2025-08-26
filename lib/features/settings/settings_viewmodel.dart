@@ -7,7 +7,7 @@ import 'package:lovefortune_app/core/repositories/horoscope_repository.dart';
 import 'package:lovefortune_app/core/repositories/profile_repository.dart';
 import 'package:lovefortune_app/features/auth/auth_providers.dart';
 import 'package:lovefortune_app/features/settings/profile_edit_screen.dart';
-import 'package:lovefortune_app/features/home/home_viewmodel.dart'; // HomeViewModel을 사용하기 위해 import 합니다.
+import 'package:lovefortune_app/features/today_us/today_us_viewmodel.dart'; // today_us_viewmodel을 import 합니다.
 import 'package:logger/logger.dart';
 
 final logger = Logger();
@@ -53,13 +53,13 @@ class SettingsViewModel extends Notifier<SettingsState> {
     return SettingsState(isLoading: true);
   }
 
-  // 데이터 변경 후, 프로필 완성 여부와 홈 화면을 모두 갱신하는 helper 함수
+  // 데이터 변경 후, 프로필 완성 여부와 '오늘우리' 탭을 모두 갱신하는 helper 함수
   Future<void> _reloadDataAndRefresh() async {
     await loadProfileData();
     // profileCompletenessProvider를 무효화하여 다시 실행하도록 합니다.
     ref.invalidate(profileCompletenessProvider);
-    // HomeViewModel의 fetchHoroscope 함수를 호출하여 홈 화면 데이터를 갱신합니다.
-    ref.read(homeViewModelProvider.notifier).fetchHoroscope();
+    // TodayUsViewModel의 fetchHoroscope 함수를 호출하여 '오늘우리' 화면 데이터를 갱신합니다.
+    ref.read(todayUsViewModelProvider.notifier).fetchHoroscope();
   }
 
   Future<void> signOut() async {
@@ -68,7 +68,6 @@ class SettingsViewModel extends Notifier<SettingsState> {
 
   Future<void> loadProfileData() async {
     state = state.copyWith(isLoading: true);
-    logger.i('프로필 데이터 로딩 시작...');
     try {
       final myProfile = await _profileRepo.getMyProfile();
       final partners = await _profileRepo.getPartners();
@@ -79,9 +78,7 @@ class SettingsViewModel extends Notifier<SettingsState> {
         partners: partners,
         selectedPartnerId: selectedPartner?.id,
       );
-      logger.i('✅ SettingsState 업데이트 완료.');
     } catch (e) {
-      logger.e('프로필 데이터 로딩 실패:', error: e);
       state = state.copyWith(isLoading: false);
     }
   }
@@ -93,7 +90,11 @@ class SettingsViewModel extends Notifier<SettingsState> {
   }
 
   Future<void> addPartner(String nickname, DateTime birthdate) async {
-    await _profileRepo.addPartner(nickname, birthdate);
+    final newPartner = await _profileRepo.addPartner(nickname, birthdate);
+    final partners = await _profileRepo.getPartners();
+    if (partners.length == 1) {
+      await _profileRepo.setSelectedPartner(newPartner.id);
+    }
     await _reloadDataAndRefresh();
   }
 

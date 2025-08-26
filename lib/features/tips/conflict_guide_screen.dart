@@ -5,14 +5,15 @@ import 'package:lovefortune_app/core/constants/ad_constants.dart';
 import 'package:lovefortune_app/core/models/conflict_guide_model.dart';
 import 'package:lovefortune_app/features/tips/tips_viewmodel.dart';
 
-// StatefulWidget을 ConsumerStatefulWidget으로 변경하여 ref에 접근합니다.
 class ConflictGuideScreen extends ConsumerStatefulWidget {
   final String topic;
+  final String category;
   final Future<ConflictGuideModel> guideFuture;
 
   const ConflictGuideScreen({
     super.key,
     required this.topic,
+    required this.category,
     required this.guideFuture,
   });
 
@@ -24,23 +25,16 @@ class _ConflictGuideScreenState extends ConsumerState<ConflictGuideScreen> {
   RewardedAd? _rewardedAd;
   bool _isAdLoaded = false;
   bool _adWatched = false;
-
-  // Future를 상태로 관리하여 재시도 기능을 구현합니다.
+  bool _adFailedToLoad = false; // 광고 로딩 실패 상태 추가
   late Future<ConflictGuideModel> _guideFuture;
 
-  final adUnitId = AdConstants.conflictRewardAdUnitId;
+  final adUnitId = AdConstants.specialAdviceRewardedAdUnitId;
 
   @override
   void initState() {
     super.initState();
-    _guideFuture = widget.guideFuture; // 초기 Future를 설정합니다.
+    _guideFuture = widget.guideFuture;
     _loadRewardedAd();
-  }
-
-  @override
-  void dispose() {
-    _rewardedAd?.dispose();
-    super.dispose();
   }
 
   void _loadRewardedAd() {
@@ -57,6 +51,7 @@ class _ConflictGuideScreenState extends ConsumerState<ConflictGuideScreen> {
         onAdFailedToLoad: (LoadAdError error) {
           setState(() {
             _isAdLoaded = false;
+            _adFailedToLoad = true;
           });
         },
       ),
@@ -114,29 +109,39 @@ class _ConflictGuideScreenState extends ConsumerState<ConflictGuideScreen> {
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            const Text(
-              '짧은 광고를 시청하고\n맞춤 해결책을 확인해보세요!',
+            Text(
+              _adFailedToLoad
+                  ? '광고를 불러오지 못했어요.\n아래 버튼을 눌러 바로 가이드를 확인하세요.'
+                  : '짧은 광고를 시청하고\n맞춤 해결책을 확인해보세요!',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: _isAdLoaded ? _showRewardedAd : null,
-              icon: _isAdLoaded
-                  ? const Icon(Icons.slow_motion_video)
-                  : const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            if (_adFailedToLoad)
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _adWatched = true;
+                  });
+                },
+                child: const Text('바로 가이드 보기'),
+              )
+            else
+              ElevatedButton.icon(
+                onPressed: _isAdLoaded ? _showRewardedAd : null,
+                icon: _isAdLoaded
+                    ? const Icon(Icons.slow_motion_video)
+                    : const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                ),
+                label: Text(_isAdLoaded ? '광고 보고 가이드 확인' : '광고 불러오는 중...'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF5B86E5),
+                  foregroundColor: Colors.white,
+                ),
               ),
-              label: Text(_isAdLoaded ? '광고 보고 가이드 확인' : '광고 불러오는 중...'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF5B86E5),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
           ],
         ),
       ),

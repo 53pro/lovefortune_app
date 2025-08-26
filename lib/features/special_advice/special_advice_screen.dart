@@ -3,7 +3,6 @@ import 'package:lovefortune_app/core/models/special_advice_model.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:lovefortune_app/core/constants/ad_constants.dart';
 
-// StatefulWidget으로 변경하여 광고 로딩 및 표시 상태를 관리합니다.
 class SpecialAdviceScreen extends StatefulWidget {
   final Future<SpecialAdviceModel> adviceFuture;
 
@@ -20,8 +19,8 @@ class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
   RewardedAd? _rewardedAd;
   bool _isAdLoaded = false;
   bool _adWatched = false;
+  bool _adFailedToLoad = false; // 광고 로딩 실패 상태 추가
 
-  // AdConstants에서 광고 유닛 ID를 가져옵니다.
   final adUnitId = AdConstants.specialAdviceRewardedAdUnitId;
 
   @override
@@ -30,7 +29,6 @@ class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
     _loadRewardedAd();
   }
 
-  // 리워드 광고를 불러오는 함수
   void _loadRewardedAd() {
     RewardedAd.load(
       adUnitId: adUnitId,
@@ -43,30 +41,24 @@ class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
           });
         },
         onAdFailedToLoad: (LoadAdError error) {
+          // 광고 로딩 실패 시 상태를 변경합니다.
           setState(() {
             _isAdLoaded = false;
+            _adFailedToLoad = true;
           });
         },
       ),
     );
   }
 
-  // 광고를 보여주는 함수
   void _showRewardedAd() {
     if (_rewardedAd != null) {
       _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
-        onAdDismissedFullScreenContent: (ad) {
-          ad.dispose();
-          _loadRewardedAd(); // 다음을 위해 새 광고 로드
-        },
-        onAdFailedToShowFullScreenContent: (ad, error) {
-          ad.dispose();
-          _loadRewardedAd();
-        },
+        onAdDismissedFullScreenContent: (ad) => ad.dispose(),
+        onAdFailedToShowFullScreenContent: (ad, error) => ad.dispose(),
       );
       _rewardedAd!.show(
         onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
-          // 사용자가 광고 시청을 완료했을 때
           setState(() {
             _adWatched = true;
           });
@@ -88,14 +80,12 @@ class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
       appBar: AppBar(
         title: const Text('오늘의 스페셜 조언'),
       ),
-      // 광고 시청 여부에 따라 다른 UI를 보여줍니다.
       body: _adWatched
-          ? _buildFutureContent() // 광고 시청 완료 후: 조언 내용 표시
-          : _buildAdPrompt(), // 광고 시청 전: 광고 보기 버튼 표시
+          ? _buildFutureContent()
+          : _buildAdPrompt(),
     );
   }
 
-  // 광고 시청을 유도하는 UI
   Widget _buildAdPrompt() {
     return Center(
       child: Padding(
@@ -110,30 +100,42 @@ class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            const Text(
-              '짧은 광고를 시청하고\n오늘의 스페셜 조언을 확인해보세요!',
+            Text(
+              _adFailedToLoad
+                  ? '광고를 불러오지 못했어요.\n아래 버튼을 눌러 바로 조언을 확인하세요.'
+                  : '짧은 광고를 시청하고\n오늘의 스페셜 조언을 확인해보세요!',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 32),
-            ElevatedButton.icon(
-              // 광고가 로드되었을 때만 버튼 활성화
-              onPressed: _isAdLoaded ? _showRewardedAd : null,
-              icon: _isAdLoaded
-                  ? const Icon(Icons.slow_motion_video)
-                  : const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+            // 광고 로딩 실패 여부에 따라 다른 버튼을 보여줍니다.
+            if (_adFailedToLoad)
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _adWatched = true;
+                  });
+                },
+                child: const Text('바로 조언 보기'),
+              )
+            else
+              ElevatedButton.icon(
+                onPressed: _isAdLoaded ? _showRewardedAd : null,
+                icon: _isAdLoaded
+                    ? const Icon(Icons.slow_motion_video)
+                    : const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                label: Text(_isAdLoaded ? '광고 보고 조언 확인하기' : '광고 불러오는 중...'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF8A8A),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
-              label: Text(_isAdLoaded ? '광고 보고 조언 확인하기' : '광고 불러오는 중...'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF8A8A),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
           ],
         ),
       ),

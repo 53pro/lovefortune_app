@@ -77,12 +77,15 @@ class ProfileRepository {
     return partnersData.map((data) => ProfileModel.fromMap(data as Map<String, dynamic>)).toList();
   }
 
-  Future<void> addPartner(String nickname, DateTime birthdate) async {
+  // 이제 Future<void> 대신 Future<ProfileModel>을 반환합니다.
+  Future<ProfileModel> addPartner(String nickname, DateTime birthdate) async {
     const uuid = Uuid();
     final newPartner = ProfileModel(id: uuid.v4(), nickname: nickname, birthdate: birthdate);
     await _userDocRef.set({
       'partners': FieldValue.arrayUnion([newPartner.toMap()])
     }, SetOptions(merge: true));
+    // 새로 만든 파트너 객체를 반환합니다.
+    return newPartner;
   }
 
   Future<void> updatePartner(ProfileModel updatedPartner) async {

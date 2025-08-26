@@ -3,12 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:lovefortune_app/core/models/horoscope_model.dart';
 import 'package:lovefortune_app/core/models/special_advice_model.dart';
-import 'package:lovefortune_app/core/models/self_discovery_model.dart'; // 자기 발견 모델 import
+import 'package:lovefortune_app/core/models/self_discovery_model.dart';
+import 'package:lovefortune_app/core/models/personality_report_model.dart';
+import 'package:lovefortune_app/core/models/conflict_guide_model.dart';
 import 'package:logger/logger.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:lovefortune_app/core/models/personality_report_model.dart';
-import 'package:lovefortune_app/core/models/conflict_topic_model.dart';
-import 'package:lovefortune_app/core/models/conflict_guide_model.dart';
 
 final logger = Logger();
 final aiServiceProvider = Provider((ref) => AIService());
@@ -17,155 +16,78 @@ class AIService {
   static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
   static final String _apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
 
+  // 공통 API 호출 로직을 만들어 코드를 재사용합니다.
+  Future<Map<String, dynamic>> _callApi(String prompt) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl?key=$_apiKey'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'contents': [{'parts': [{'text': prompt}]}]
+      }),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      String content = data['candidates'][0]['content']['parts'][0]['text'];
+      content = content.replaceAll('```json', '').replaceAll('```', '').trim();
+      return jsonDecode(content);
+    } else {
+      logger.e('Gemini API 에러 응답: ${response.statusCode}\n${response.body}');
+      throw Exception('AI 서버와 통신하는 데 실패했습니다.');
+    }
+  }
+
+  // --- 점진적 로딩을 위한 함수들 (추가) ---
+  Future<Map<String, dynamic>> getCompatibilityScore(String userBirth, String partnerBirth) async {
+    final prompt = "두 사람의 생년월일($userBirth, $partnerBirth)을 바탕으로, 오늘의 궁합 지수(compatibility_score)와 한 줄 요약(summary)을 JSON 형식으로 생성해줘.";
+    return await _callApi(prompt);
+  }
+
+  Future<Map<String, dynamic>> getDetailedAdvice(String userBirth, String partnerBirth) async {
+    final prompt = "두 사람의 생년월일($userBirth, $partnerBirth)을 바탕으로, 오늘의 긍정적인 조언(positive_advice)과 주의할 점(caution_advice)을 JSON 형식으로 생성해줘.";
+    return await _callApi(prompt);
+  }
+
+  Future<Map<String, dynamic>> getDateRecommendation(String userBirth, String partnerBirth) async {
+    final prompt = "두 사람의 생년월일($userBirth, $partnerBirth)을 바탕으로, 오늘의 추천 데이트(recommended_date)를 JSON 형식으로 생성해줘.";
+    return await _callApi(prompt);
+  }
+
+  // --- 기존의 전체 운세 요청 함수 (캐싱용) ---
   Future<HoroscopeModel> getHoroscope(String userBirth, String partnerBirth) async {
     final prompt = _buildHoroscopePrompt(userBirth, partnerBirth);
-    logger.d('Gemini API 오늘의 운세 요청 프롬프트:\n$prompt');
-
-    try {
-      logger.i('Gemini API에 오늘의 운세 요청을 보냅니다...');
-      final response = await http.post(
-        Uri.parse('$_baseUrl?key=$_apiKey'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'contents': [{'parts': [{'text': prompt}]}]
-        }),
-      );
-      logger.i('Gemini API 오늘의 운세 응답 수신: Status Code ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        logger.d('Gemini API 오늘의 운세 응답 내용:\n$data');
-        String content = data['candidates'][0]['content']['parts'][0]['text'];
-        content = content.replaceAll('```json', '').replaceAll('```', '').trim();
-        final jsonContent = jsonDecode(content);
-        return HoroscopeModel.fromJson(jsonContent);
-      } else {
-        logger.e('Gemini API 오늘의 운세 에러 응답: ${response.statusCode}\n${response.body}');
-        throw Exception('AI 서버와 통신하는 데 실패했습니다: ${response.body}');
-      }
-    } catch (e) {
-      logger.e('Gemini API 오늘의 운세 요청 중 예외 발생:', error: e);
-      throw Exception('오늘의 운세를 불러오는 중 오류가 발생했습니다: $e');
-    }
+    final jsonContent = await _callApi(prompt);
+    return HoroscopeModel.fromJson(jsonContent);
   }
 
+  // --- 스페셜 조언 ---
   Future<SpecialAdviceModel> getSpecialAdvice(String userBirth, String partnerBirth) async {
     final prompt = _buildSpecialAdvicePrompt(userBirth, partnerBirth);
-    logger.d('Gemini API 스페셜 조언 요청 프롬프트:\n$prompt');
-
-    try {
-      logger.i('Gemini API에 스페셜 조언 요청을 보냅니다...');
-      final response = await http.post(
-        Uri.parse('$_baseUrl?key=$_apiKey'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'contents': [{'parts': [{'text': prompt}]}]
-        }),
-      );
-      logger.i('Gemini API 스페셜 조언 응답 수신: Status Code ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        logger.d('Gemini API 스페셜 조언 응답 내용:\n$data');
-        String content = data['candidates'][0]['content']['parts'][0]['text'];
-        content = content.replaceAll('```json', '').replaceAll('```', '').trim();
-        final jsonContent = jsonDecode(content);
-        return SpecialAdviceModel.fromJson(jsonContent);
-      } else {
-        logger.e('Gemini API 스페셜 조언 에러 응답: ${response.statusCode}\n${response.body}');
-        throw Exception('AI 서버와 통신하는 데 실패했습니다: ${response.body}');
-      }
-    } catch (e) {
-      logger.e('Gemini API 스페셜 조언 요청 중 예외 발생:', error: e);
-      throw Exception('스페셜 조언을 불러오는 중 오류가 발생했습니다: $e');
-    }
+    final jsonContent = await _callApi(prompt);
+    return SpecialAdviceModel.fromJson(jsonContent);
   }
 
-  // 자기 발견 팁을 요청하는 새로운 함수 (추가)
+  // --- 자기 발견 팁 ---
   Future<SelfDiscoveryModel> getSelfDiscoveryTip(String userBirth) async {
     final prompt = _buildSelfDiscoveryPrompt(userBirth);
-    logger.d('Gemini API 자기 발견 팁 요청 프롬프트:\n$prompt');
-
-    try {
-      logger.i('Gemini API에 자기 발견 팁 요청을 보냅니다...');
-      final response = await http.post(
-        Uri.parse('$_baseUrl?key=$_apiKey'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'contents': [{'parts': [{'text': prompt}]}]
-        }),
-      );
-      logger.i('Gemini API 자기 발견 팁 응답 수신: Status Code ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        String content = data['candidates'][0]['content']['parts'][0]['text'];
-        content = content.replaceAll('```json', '').replaceAll('```', '').trim();
-        final jsonContent = jsonDecode(content);
-        return SelfDiscoveryModel.fromJson(jsonContent);
-      } else {
-        throw Exception('AI 서버와 통신하는 데 실패했습니다: ${response.body}');
-      }
-    } catch (e) {
-      throw Exception('자기 발견 팁을 불러오는 중 오류가 발생했습니다: $e');
-    }
+    final jsonContent = await _callApi(prompt);
+    return SelfDiscoveryModel.fromJson(jsonContent);
   }
 
-  // 성향 분석 리포트를 요청하는 함수
+  // --- 관계 설명서 ---
   Future<PersonalityReportModel> getPersonalityReport(String userBirth, String partnerBirth) async {
     final prompt = _buildPersonalityReportPrompt(userBirth, partnerBirth);
-    logger.d('Gemini API 관계 설명서 요청 프롬프트:\n$prompt');
-
-    try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl?key=$_apiKey'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'contents': [{'parts': [{'text': prompt}]}]
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        String content = data['candidates'][0]['content']['parts'][0]['text'];
-        content = content.replaceAll('```json', '').replaceAll('```', '').trim();
-        final jsonContent = jsonDecode(content);
-        return PersonalityReportModel.fromJson(jsonContent);
-      } else {
-        throw Exception('AI 서버와 통신하는 데 실패했습니다: ${response.body}');
-      }
-    } catch (e) {
-      throw Exception('관계 설명서를 불러오는 중 오류가 발생했습니다: $e');
-    }
+    final jsonContent = await _callApi(prompt);
+    return PersonalityReportModel.fromJson(jsonContent);
   }
 
-  // 이제 String 대신 ConflictGuideModel을 반환하도록 수정합니다.
+  // --- 갈등 해결 가이드 ---
   Future<ConflictGuideModel> getConflictGuide(String userBirth, String partnerBirth, String topic) async {
     final prompt = _buildConflictGuidePrompt(userBirth, partnerBirth, topic);
-
-    try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl?key=$_apiKey'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'contents': [{'parts': [{'text': prompt}]}]
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        String content = data['candidates'][0]['content']['parts'][0]['text'];
-        content = content.replaceAll('```json', '').replaceAll('```', '').trim();
-        final jsonContent = jsonDecode(content);
-        return ConflictGuideModel.fromJson(jsonContent);
-      } else {
-        throw Exception('AI 서버와 통신하는 데 실패했습니다: ${response.body}');
-      }
-    } catch (e) {
-      throw Exception('갈등 해결 가이드를 불러오는 중 오류가 발생했습니다: $e');
-    }
+    final jsonContent = await _callApi(prompt);
+    return ConflictGuideModel.fromJson(jsonContent);
   }
 
+  // --- 각 기능별 프롬프트 생성 함수들 ---
 
   String _buildHoroscopePrompt(String userBirth, String partnerBirth) {
     return """

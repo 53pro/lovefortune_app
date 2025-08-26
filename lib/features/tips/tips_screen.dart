@@ -5,10 +5,15 @@ import 'package:lovefortune_app/core/constants/ad_constants.dart';
 import 'package:lovefortune_app/core/models/conflict_topic_model.dart';
 import 'package:lovefortune_app/core/models/personality_report_model.dart';
 import 'package:lovefortune_app/core/models/profile_model.dart';
+import 'package:lovefortune_app/features/main/main_screen.dart';
 import 'package:lovefortune_app/features/settings/settings_viewmodel.dart';
 import 'package:lovefortune_app/features/tips/conflict_guide_screen.dart';
 import 'package:lovefortune_app/features/tips/personality_report_screen.dart';
 import 'package:lovefortune_app/features/tips/tips_viewmodel.dart';
+import 'package:lovefortune_app/utils/dialogs.dart';
+import 'package:logger/logger.dart';
+
+final logger = Logger();
 
 class TipsScreen extends ConsumerStatefulWidget {
   const TipsScreen({super.key});
@@ -37,15 +42,20 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
   }
 
   void _loadNativeAd() {
+    logger.i('네이티브 광고 로드를 시작합니다...');
     _nativeAd = NativeAd(
       adUnitId: AdConstants.tipsNativeAdUnitId,
       listener: NativeAdListener(
         onAdLoaded: (ad) {
-          setState(() {
-            _isNativeAdLoaded = true;
-          });
+          logger.i('✅ 네이티브 광고 로드 성공!');
+          if (mounted) {
+            setState(() {
+              _isNativeAdLoaded = true;
+            });
+          }
         },
         onAdFailedToLoad: (ad, error) {
+          logger.e('⛔ 네이티브 광고 로드 실패:', error: error);
           ad.dispose();
         },
       ),
@@ -88,7 +98,6 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
             const SizedBox(height: 16),
             _buildWeeklyQuestionCard(state.weeklyQuestion),
             const SizedBox(height: 16),
-            // --- 네이티브 광고 섹션 ---
             if (_isNativeAdLoaded && _nativeAd != null)
               Container(
                 height: 320,
@@ -99,7 +108,7 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
                 child: AdWidget(ad: _nativeAd!),
               ),
             if (_isNativeAdLoaded) const SizedBox(height: 16),
-            _buildConflictGuideCard(context, ref, state.conflictTopics),
+            _buildConflictGuideCard(context, ref, settingsState, state.conflictTopics),
           ],
         ),
       ),
@@ -165,11 +174,7 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
                       );
                     }
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text(
-                              '프로필 정보가 없어 설명서를 볼 수 없습니다. 내 정보와 상대방 정보를 모두 등록해주세요.')),
-                    );
+                    showProfileNeededPopup(context, ref);
                   }
                 },
                 child: const Text('자세히 보기')),
@@ -207,7 +212,7 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
   }
 
   Widget _buildConflictGuideCard(
-      BuildContext context, WidgetRef ref, List<ConflictTopicModel> topics) {
+      BuildContext context, WidgetRef ref, SettingsState settingsState, List<ConflictTopicModel> topics) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -238,18 +243,35 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
                     title: Text(topic.topic),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
-                      final guideFuture = ref.read(tipsViewModelProvider.notifier).fetchConflictGuide(topic.topic);
+                      final myProfile = settingsState.myProfile;
+                      ProfileModel? partnerProfile;
 
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => ConflictGuideScreen(
-                            topic: topic.topic,
-                            // TODO: ConflictGuideScreen에 'category' 파라미터를 추가한 후, 이 줄의 주석을 해제하세요.
-                            // category: topic.category,
-                            guideFuture: guideFuture,
+                      if (settingsState.selectedPartnerId != null &&
+                          settingsState.partners.isNotEmpty) {
+                        try {
+                          partnerProfile = settingsState.partners.firstWhere(
+                                  (p) => p.id == settingsState.selectedPartnerId);
+                        } catch (e) {
+                          partnerProfile = null;
+                        }
+                      } else if (settingsState.partners.isNotEmpty) {
+                        partnerProfile = settingsState.partners.first;
+                      }
+
+                      if (myProfile != null && partnerProfile != null) {
+                        final guideFuture = ref.read(tipsViewModelProvider.notifier).fetchConflictGuide(topic.topic);
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => ConflictGuideScreen(
+                              topic: topic.topic,
+                              category: topic.category,
+                              guideFuture: guideFuture,
+                            ),
                           ),
-                        ),
-                      );
+                        );
+                      } else {
+                        showProfileNeededPopup(context, ref);
+                      }
                     },
                   );
                 },

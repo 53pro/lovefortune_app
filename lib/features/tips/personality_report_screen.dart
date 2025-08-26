@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:lovefortune_app/core/constants/ad_constants.dart';
 import 'package:lovefortune_app/core/models/personality_report_model.dart';
 import 'package:lovefortune_app/core/models/profile_model.dart';
 
-
-class PersonalityReportScreen extends ConsumerStatefulWidget {
+class PersonalityReportScreen extends StatefulWidget {
   final bool needsApiCall;
   final PersonalityReportModel? cachedReport;
-  final Future<PersonalityReportModel>? reportFuture; // reportFuture 파라미터를 추가합니다.
+  final Future<PersonalityReportModel>? reportFuture;
   final ProfileModel myProfile;
   final ProfileModel partnerProfile;
 
@@ -17,35 +15,29 @@ class PersonalityReportScreen extends ConsumerStatefulWidget {
     super.key,
     required this.needsApiCall,
     this.cachedReport,
-    this.reportFuture, // 생성자에 reportFuture를 추가합니다.
+    this.reportFuture,
     required this.myProfile,
     required this.partnerProfile,
   });
 
   @override
-  ConsumerState<PersonalityReportScreen> createState() => _PersonalityReportScreenState();
+  State<PersonalityReportScreen> createState() => _PersonalityReportScreenState();
 }
 
-class _PersonalityReportScreenState extends ConsumerState<PersonalityReportScreen> {
+class _PersonalityReportScreenState extends State<PersonalityReportScreen> {
   RewardedAd? _rewardedAd;
   bool _isAdLoaded = false;
   bool _adWatched = false;
+  bool _adFailedToLoad = false; // 광고 로딩 실패 상태 추가
 
-  final adUnitId = AdConstants.personalityRewardAdUnitId;
+  final adUnitId = AdConstants.specialAdviceRewardedAdUnitId;
 
   @override
   void initState() {
     super.initState();
-    // API 호출이 필요할 때만 광고를 로드합니다.
     if (widget.needsApiCall) {
       _loadRewardedAd();
     }
-  }
-
-  @override
-  void dispose() {
-    _rewardedAd?.dispose();
-    super.dispose();
   }
 
   void _loadRewardedAd() {
@@ -62,6 +54,7 @@ class _PersonalityReportScreenState extends ConsumerState<PersonalityReportScree
         onAdFailedToLoad: (LoadAdError error) {
           setState(() {
             _isAdLoaded = false;
+            _adFailedToLoad = true;
           });
         },
       ),
@@ -122,29 +115,39 @@ class _PersonalityReportScreenState extends ConsumerState<PersonalityReportScree
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            const Text(
-              '짧은 광고를 시청하고\n두 분의 관계 설명서를 확인해보세요!',
+            Text(
+              _adFailedToLoad
+                  ? '광고를 불러오지 못했어요.\n아래 버튼을 눌러 바로 설명서를 확인하세요.'
+                  : '짧은 광고를 시청하고\n두 분의 관계 설명서를 확인해보세요!',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: _isAdLoaded ? _showRewardedAd : null,
-              icon: _isAdLoaded
-                  ? const Icon(Icons.slow_motion_video)
-                  : const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            if (_adFailedToLoad)
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _adWatched = true;
+                  });
+                },
+                child: const Text('바로 설명서 보기'),
+              )
+            else
+              ElevatedButton.icon(
+                onPressed: _isAdLoaded ? _showRewardedAd : null,
+                icon: _isAdLoaded
+                    ? const Icon(Icons.slow_motion_video)
+                    : const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                ),
+                label: Text(_isAdLoaded ? '광고 보고 설명서 확인' : '광고 불러오는 중...'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF5B86E5),
+                  foregroundColor: Colors.white,
+                ),
               ),
-              label: Text(_isAdLoaded ? '광고 보고 설명서 확인' : '광고 불러오는 중...'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF5B86E5),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
           ],
         ),
       ),

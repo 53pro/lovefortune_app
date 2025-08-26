@@ -1,8 +1,15 @@
+plugins {
+    id("com.android.application") version "8.7.3" apply false
+    id("org.jetbrains.kotlin.android") version "2.1.0" apply false
+    // 이 줄을 추가합니다. (버전은 최신 버전을 확인하는 것이 좋습니다)
+    id("com.google.firebase.appdistribution") version "4.0.1" apply false
+}
+
 allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
+//    repositories {
+//        google()
+//        mavenCentral()
+//    }
 }
 
 val newBuildDir: Directory = rootProject.layout.buildDirectory.dir("../../build").get()
@@ -11,9 +18,6 @@ rootProject.layout.buildDirectory.value(newBuildDir)
 subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
-}
-subprojects {
-    project.evaluationDependsOn(":app")
 }
 
 tasks.register<Delete>("clean") {

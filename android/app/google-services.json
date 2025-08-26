@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "383709113689-i0d6t9eqmivjjsqifcilejj0oo20hpgv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.thehama.lovefortune",
+            "certificate_hash": "f58b60343dfcc2933795e462b2c670fd708c88b6"
+          }
+        },
+        {
           "client_id": "383709113689-9hf22t27tuedq32lsepil09jss7oj28f.apps.googleusercontent.com",
           "client_type": 3
         }
