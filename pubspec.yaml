@@ -1,7 +1,7 @@
 name: lovefortune_app
 description: "오늘 우리는 - AI 운세 기반의 커플 관계 조언 앱"
 publish_to: 'none'
-version: 1.0.1+2
+version: 1.0.3+4
 
 environment:
   sdk: '>=3.2.3 <4.0.0'
@@ -40,7 +40,7 @@ dependencies:
   image_picker: ^1.0.7
   firebase_storage: ^11.6.0
   # flutter_localizations 패키지를 추가합니다.
-
+  upgrader: ^9.0.0 # 이 줄을 추가합니다.
 
 dev_dependencies:
   flutter_test:

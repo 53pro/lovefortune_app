@@ -10,7 +10,6 @@ import 'package:lovefortune_app/features/special_advice/special_advice_screen.da
 import 'package:lovefortune_app/features/settings/settings_screen.dart';
 import 'package:lovefortune_app/features/today_us/today_us_viewmodel.dart';
 
-// 클래스 이름을 TodayUsScreen으로 변경합니다.
 class TodayUsScreen extends ConsumerStatefulWidget {
   const TodayUsScreen({super.key});
 
@@ -22,12 +21,13 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
   DateTime? lastPressed;
   NativeAd? _nativeAd;
   bool _isNativeAdLoaded = false;
+  // 중복 실행을 방지하기 위한 상태 변수를 추가합니다.
+  bool _isProcessing = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // todayUsViewModelProvider를 사용하도록 변경합니다.
       ref.read(todayUsViewModelProvider.notifier).fetchHoroscope();
     });
     _loadNativeAd();
@@ -44,9 +44,11 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
       adUnitId: AdConstants.homeNativeAdUnitId,
       listener: NativeAdListener(
         onAdLoaded: (ad) {
-          setState(() {
-            _isNativeAdLoaded = true;
-          });
+          if (mounted) {
+            setState(() {
+              _isNativeAdLoaded = true;
+            });
+          }
         },
         onAdFailedToLoad: (ad, error) {
           ad.dispose();
@@ -64,7 +66,6 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // todayUsViewModelProvider를 사용하도록 변경합니다.
     final state = ref.watch(todayUsViewModelProvider);
     final viewModel = ref.read(todayUsViewModelProvider.notifier);
 
@@ -88,7 +89,7 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('오늘우리'), // AppBar 제목 변경
+          title: const Text('오늘우리'),
           actions: [
             IconButton(
               icon: const Icon(Icons.casino_outlined),
@@ -117,7 +118,7 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
                     else if (state.isProfileIncomplete)
                       _buildIncompleteProfileWidget(context)
                     else if (state.errorMessage != null)
-                        Center(heightFactor: 5, child: Text(state.errorMessage!))
+                        _buildErrorWidget(context, viewModel)
                       else if (state.horoscope != null)
                           Column(
                             children: [
@@ -152,6 +153,39 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
     );
   }
 
+  Widget _buildErrorWidget(BuildContext context, TodayUsViewModel viewModel) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 48.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.cloud_off_outlined, color: Colors.grey, size: 48),
+            const SizedBox(height: 16),
+            const Text(
+              '운세를 불러오는 데 실패했어요.\n네트워크 연결을 확인해주세요.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                viewModel.fetchHoroscope();
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('다시 불러오기'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF5B86E5),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildIncompleteProfileWidget(BuildContext context) {
     return Center(
       child: Padding(
@@ -169,7 +203,6 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: () {
-                // '내 정보' 화면으로 바로 이동합니다.
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (context) => const SettingsScreen()),
                 );
@@ -330,24 +363,45 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () async {
-                if (state.myProfile != null && state.partnerProfile != null) {
-                  final viewModel = ref.read(todayUsViewModelProvider.notifier);
-                  final adviceFuture = viewModel.fetchSpecialAdvice();
-                  await Future.delayed(const Duration(seconds: 3));
-                  if (mounted) {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => SpecialAdviceScreen(
-                          adviceFuture: adviceFuture,
+              // 버튼이 이미 눌렸는지(_isProcessing) 확인하여 중복 실행을 방지합니다.
+              onPressed: _isProcessing ? null : () async {
+                // 이미 처리 중이면 아무것도 하지 않습니다.
+                if (_isProcessing) return;
+
+                // 처리 시작을 알립니다.
+                setState(() {
+                  _isProcessing = true;
+                });
+
+                try {
+                  if (state.myProfile != null && state.partnerProfile != null) {
+                    final viewModel = ref.read(todayUsViewModelProvider.notifier);
+                    final adviceFuture = viewModel.fetchSpecialAdvice();
+
+                    // TODO: 여기에 실제 리워드 광고 로직을 추가합니다.
+                    await Future.delayed(const Duration(seconds: 1)); // 광고 시청 시간 흉내
+
+                    if (mounted) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => SpecialAdviceScreen(
+                            adviceFuture: adviceFuture,
+                          ),
                         ),
-                      ),
+                      );
+                    }
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('프로필 정보가 없어 스페셜 조언을 볼 수 없습니다.')),
                     );
                   }
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('프로필 정보가 없어 스페셜 조언을 볼 수 없습니다.')),
-                  );
+                } finally {
+                  // 작업이 끝나면(성공하든 실패하든) 플래그를 다시 false로 설정합니다.
+                  if (mounted) {
+                    setState(() {
+                      _isProcessing = false;
+                    });
+                  }
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -358,7 +412,13 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 elevation: 0,
               ),
-              child: const Row(
+              child: _isProcessing
+                  ? const SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+              )
+                  : const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.video_collection, color: Colors.white),

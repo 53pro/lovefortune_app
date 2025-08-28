@@ -5,7 +5,8 @@ import 'package:lovefortune_app/features/personality/personality_screen.dart';
 import 'package:lovefortune_app/features/today_us/today_us_screen.dart';
 import 'package:lovefortune_app/features/settings/settings_screen.dart';
 import 'package:lovefortune_app/features/tips/tips_screen.dart';
-import 'package:lovefortune_app/utils/dialogs.dart'; // 새로 만든 팝업 파일 import
+import 'package:lovefortune_app/features/today_us/today_us_viewmodel.dart';
+import 'package:lovefortune_app/utils/dialogs.dart';
 
 // 앱 전체에서 현재 선택된 탭 인덱스를 관리하는 Provider
 final mainScreenIndexProvider = StateProvider<int>((ref) => 0);
@@ -31,8 +32,15 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // 1. Provider의 초기값을 '단 한 번만' 설정합니다.
       if (ref.read(mainScreenIndexProvider) != widget.initialIndex) {
         ref.read(mainScreenIndexProvider.notifier).state = widget.initialIndex;
+      }
+
+      // 2. 프로필 정보가 완전한 경우, '오늘우리' 탭의 데이터를 미리 불러옵니다.
+      final isProfileComplete = ref.read(profileCompletenessProvider).value ?? false;
+      if (isProfileComplete) {
+        ref.read(todayUsViewModelProvider.notifier).fetchHoroscope();
       }
     });
   }

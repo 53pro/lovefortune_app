@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:lovefortune_app/core/models/conflict_topic_model.dart';
 import 'package:lovefortune_app/core/models/personality_report_model.dart';
 import 'package:lovefortune_app/core/models/profile_model.dart';
-import 'package:lovefortune_app/core/models/self_discovery_model.dart'; // 자기 발견 모델 import
+import 'package:lovefortune_app/core/models/self_discovery_model.dart';
 import 'package:lovefortune_app/core/repositories/horoscope_repository.dart';
 import 'package:lovefortune_app/core/services/ai_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -33,7 +33,8 @@ class TipsRepository {
     return (dayOfYear / 7).ceil();
   }
 
-  Future<String> getWeeklyQuestion() async {
+  // 이제 ProfileModel을 인자로 받아 AI에게 전달합니다.
+  Future<String> getWeeklyQuestion(ProfileModel myProfile, ProfileModel partnerProfile) async {
     logger.i('--- 주간 질문 가져오기 시작 ---');
     final now = DateTime.now();
     final weekOfYear = _getWeekOfYear(now);
@@ -49,28 +50,23 @@ class TipsRepository {
       return cachedQuestion;
     }
 
-    logger.i('🔄 Firebase에서 새로운 주간 질문을 가져옵니다.');
+    logger.i('🔄 AI로부터 새로운 주간 질문을 생성합니다.');
     try {
-      final querySnapshot = await _firestore.collection('weekly_questions').get();
-      final questions = querySnapshot.docs.map((doc) => doc.data()['question'] as String).toList();
-      logger.d('Firestore에서 ${questions.length}개의 질문을 찾았습니다.');
+      final myBirthString = DateFormat('yyyy-MM-dd').format(myProfile.birthdate);
+      final partnerBirthString = DateFormat('yyyy-MM-dd').format(partnerProfile.birthdate);
 
-      if (questions.isEmpty) {
-        logger.w('Firestore에 질문 데이터가 없습니다. 기본 질문을 반환합니다.');
-        return "서로에게 가장 고마웠던 순간은 언제인가요?";
-      }
-
-      final randomQuestion = questions[Random().nextInt(questions.length)];
-      logger.d('랜덤 선택된 질문: $randomQuestion');
+      // Firestore 대신 AIService를 호출합니다.
+      final newQuestion = await _aiService.getWeeklyQuestion(myBirthString, partnerBirthString);
+      logger.d('AI가 생성한 질문: $newQuestion');
 
       await _prefs.setString('cached_week_key', currentWeekKey);
-      await _prefs.setString('cached_question', randomQuestion);
+      await _prefs.setString('cached_question', newQuestion);
       logger.i('📥 새로운 주간 질문을 캐시에 저장했습니다.');
 
-      return randomQuestion;
+      return newQuestion;
     } catch (e) {
-      logger.e('Firebase에서 질문을 가져오는 중 에러 발생:', error: e);
-      throw Exception('Firebase에서 질문을 가져오는 데 실패했습니다.');
+      logger.e('AI로부터 질문을 생성하는 중 에러 발생:', error: e);
+      throw Exception('AI로부터 질문을 생성하는 데 실패했습니다.');
     }
   }
 

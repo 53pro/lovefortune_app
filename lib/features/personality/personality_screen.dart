@@ -46,10 +46,14 @@ class PersonalityScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        // AppBar의 제목을 '오늘 우리는'으로 고정합니다.
-        title: const Text('오늘 우리는'),
+        // AppBar의 leading을 제거하고, 제목을 항상 중앙에 위치시킵니다.
+        automaticallyImplyLeading: false,
+        centerTitle: true,
+        title: const Text('오늘우리는'),
       ),
+      // ViewModel의 상태에 따라 다른 화면을 보여줍니다.
       body: switch (state.status) {
+        TestStatus.loading => const Center(child: CircularProgressIndicator()), // 로딩 상태 UI 추가
         TestStatus.notStarted => _buildStartView(viewModel),
         TestStatus.inProgress => _buildTestView(state, viewModel),
         TestStatus.finished => _buildResultView(context, ref, state.result!),
@@ -138,6 +142,21 @@ class PersonalityScreen extends ConsumerWidget {
             ),
           ),
         ),
+        // 답변 버튼 아래에 뒤로 가기 버튼을 추가합니다.
+        if (state.currentQuestionIndex > 0)
+          Padding(
+            padding: const EdgeInsets.only(left: 24.0, right: 24.0, bottom: 24.0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('이전 질문'),
+                onPressed: () => viewModel.goBack(),
+              ),
+            ),
+          )
+        else
+          const SizedBox(height: 60), // 첫 질문일 때는 공간만 차지하도록 합니다.
       ],
     );
   }
@@ -205,10 +224,8 @@ class PersonalityScreen extends ConsumerWidget {
               child: const Text('오늘우리 운세 보러가기'),
             ),
             const SizedBox(height: 12),
-            // '다시 테스트하기' 버튼을 추가합니다.
             TextButton(
               onPressed: () {
-                // ViewModel의 startTest 함수를 호출하여 테스트를 리셋합니다.
                 viewModel.startTest();
               },
               child: const Text('연애 성향 다시 테스트하기'),

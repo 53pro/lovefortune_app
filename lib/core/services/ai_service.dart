@@ -87,6 +87,13 @@ class AIService {
     return ConflictGuideModel.fromJson(jsonContent);
   }
 
+  // 주간 질문을 요청하는 새로운 함수 (추가)
+  Future<String> getWeeklyQuestion(String userBirth, String partnerBirth) async {
+    final prompt = _buildWeeklyQuestionPrompt(userBirth, partnerBirth);
+    final jsonContent = await _callApi(prompt);
+    return jsonContent['weekly_question'] as String? ?? '서로의 어린 시절 꿈에 대해 이야기해보세요.';
+  }
+
   // --- 각 기능별 프롬프트 생성 함수들 ---
 
   String _buildHoroscopePrompt(String userBirth, String partnerBirth) {
@@ -249,6 +256,33 @@ class AIService {
     [사용자 생년월일]: $userBirth
     [파트너 생년월일]: $partnerBirth
     [갈등 주제]: $topic
+    """;
+  }
+  // 주간 질문 생성을 위한 새로운 프롬프트 (추가)
+  String _buildWeeklyQuestionPrompt(String userBirth, String partnerBirth) {
+    return """
+    ### #1. 역할 (Persona)
+    당신은 커플들의 대화를 유도하는 창의적인 질문 생성가입니다.
+
+    ### #2. 목표 (Goal)
+    입력된 두 사람의 생년월일을 바탕으로, 이번 주 두 사람이 함께 나누면 좋을 흥미롭고 깊이 있는 대화 주제를 **하나의 질문**으로 생성하여 아래 JSON 형식에 맞춰 출력합니다.
+
+    ### #3. 지침 (Instructions)
+    - 질문은 서로의 가치관, 추억, 미래에 대해 이야기할 수 있는 개방형 질문이어야 합니다.
+    - 너무 무겁지 않으면서도, 관계에 긍정적인 영향을 줄 수 있는 질문을 만들어주세요.
+    - 예시: "우리가 함께 했던 여행 중에 가장 기억에 남는 순간은 언제야?", "10년 후, 우리는 어떤 모습일까?"
+
+    ### #4. 제약 조건 (Constraints)
+    - 반드시 지정된 JSON 형식으로만 출력해야 합니다.
+
+    ### #5. JSON 출력 형식
+    {
+      "weekly_question": "(생성된 질문)"
+    }
+
+    ### #6. 최종 요청 (Final Request)
+    [사용자 생년월일]: $userBirth
+    [파트너 생년월일]: $partnerBirth
     """;
   }
 }

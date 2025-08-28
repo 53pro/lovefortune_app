@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lovefortune_app/core/models/special_advice_model.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -20,6 +21,7 @@ class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
   bool _isAdLoaded = false;
   bool _adWatched = false;
   bool _adFailedToLoad = false; // 광고 로딩 실패 상태 추가
+  Timer? _adLoadTimer; // 타임아웃을 위한 타이머 추가
 
   final adUnitId = AdConstants.specialAdviceRewardedAdUnitId;
 
@@ -30,22 +32,36 @@ class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
   }
 
   void _loadRewardedAd() {
+    // 3초 타임아웃 타이머 설정
+    _adLoadTimer = Timer(const Duration(seconds: 3), () {
+      if (!_isAdLoaded && mounted) {
+        setState(() {
+          _adFailedToLoad = true;
+        });
+      }
+    });
+
     RewardedAd.load(
       adUnitId: adUnitId,
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (ad) {
-          setState(() {
-            _rewardedAd = ad;
-            _isAdLoaded = true;
-          });
+          _adLoadTimer?.cancel(); // 광고 로드 성공 시 타이머 취소
+          if (mounted) {
+            setState(() {
+              _rewardedAd = ad;
+              _isAdLoaded = true;
+            });
+          }
         },
         onAdFailedToLoad: (LoadAdError error) {
-          // 광고 로딩 실패 시 상태를 변경합니다.
-          setState(() {
-            _isAdLoaded = false;
-            _adFailedToLoad = true;
-          });
+          _adLoadTimer?.cancel(); // 광고 로드 실패 시 타이머 취소
+          if (mounted) {
+            setState(() {
+              _isAdLoaded = false;
+              _adFailedToLoad = true;
+            });
+          }
         },
       ),
     );
@@ -71,6 +87,7 @@ class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
   @override
   void dispose() {
     _rewardedAd?.dispose();
+    _adLoadTimer?.cancel();
     super.dispose();
   }
 
@@ -108,7 +125,6 @@ class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
               style: const TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 32),
-            // 광고 로딩 실패 여부에 따라 다른 버튼을 보여줍니다.
             if (_adFailedToLoad)
               ElevatedButton(
                 onPressed: () {
@@ -116,6 +132,11 @@ class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
                     _adWatched = true;
                   });
                 },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF8A8A),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                ),
                 child: const Text('바로 조언 보기'),
               )
             else
@@ -126,7 +147,7 @@ class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
                     : const SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                 ),
                 label: Text(_isAdLoaded ? '광고 보고 조언 확인하기' : '광고 불러오는 중...'),
                 style: ElevatedButton.styleFrom(
@@ -141,7 +162,6 @@ class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
       ),
     );
   }
-
   // FutureBuilder를 사용하여 조언 내용을 표시하는 UI
   Widget _buildFutureContent() {
     return FutureBuilder<SpecialAdviceModel>(

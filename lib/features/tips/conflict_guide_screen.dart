@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -25,8 +26,9 @@ class _ConflictGuideScreenState extends ConsumerState<ConflictGuideScreen> {
   RewardedAd? _rewardedAd;
   bool _isAdLoaded = false;
   bool _adWatched = false;
-  bool _adFailedToLoad = false; // 광고 로딩 실패 상태 추가
+  bool _adFailedToLoad = false;
   late Future<ConflictGuideModel> _guideFuture;
+  Timer? _adLoadTimer;
 
   final adUnitId = AdConstants.specialAdviceRewardedAdUnitId;
 
@@ -38,21 +40,35 @@ class _ConflictGuideScreenState extends ConsumerState<ConflictGuideScreen> {
   }
 
   void _loadRewardedAd() {
+    _adLoadTimer = Timer(const Duration(seconds: 3), () {
+      if (!_isAdLoaded && mounted) {
+        setState(() {
+          _adFailedToLoad = true;
+        });
+      }
+    });
+
     RewardedAd.load(
       adUnitId: adUnitId,
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (ad) {
-          setState(() {
-            _rewardedAd = ad;
-            _isAdLoaded = true;
-          });
+          _adLoadTimer?.cancel();
+          if (mounted) {
+            setState(() {
+              _rewardedAd = ad;
+              _isAdLoaded = true;
+            });
+          }
         },
         onAdFailedToLoad: (LoadAdError error) {
-          setState(() {
-            _isAdLoaded = false;
-            _adFailedToLoad = true;
-          });
+          _adLoadTimer?.cancel();
+          if (mounted) {
+            setState(() {
+              _isAdLoaded = false;
+              _adFailedToLoad = true;
+            });
+          }
         },
       ),
     );

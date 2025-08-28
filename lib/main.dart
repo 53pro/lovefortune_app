@@ -8,9 +8,11 @@ import 'package:lovefortune_app/core/theme/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lovefortune_app/core/repositories/horoscope_repository.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:flutter_localizations/flutter_localizations.dart'; // 로컬라이제이션 import
+import 'package:flutter_localizations/flutter_localizations.dart';
 
+// 이 main 함수가 앱의 시작점(Entrypoint)입니다.
 void main() async {
+  // Flutter 앱을 실행하기 전에 필요한 초기화 작업을 수행합니다.
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   await initializeDateFormatting('ko_KR', null);
@@ -38,20 +40,15 @@ class MyApp extends StatelessWidget {
       title: '오늘우리는',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-
-      // --- 한글 설정을 추가합니다 ---
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [
-        Locale('ko', 'KR'), // 한국어
-        // TODO: 향후 지원할 다른 언어들을 여기에 추가할 수 있습니다. (예: Locale('en', 'US'))
+        Locale('ko', 'KR'),
       ],
-      locale: const Locale('ko'), // 앱의 기본 언어를 한국어로 설정
-      // --------------------------
-
+      locale: const Locale('ko'),
       home: const AuthWrapper(),
     );
   }
