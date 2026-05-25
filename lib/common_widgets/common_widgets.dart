@@ -1,3 +1,4 @@
+import 'package:lovefortune_app/core/theme/app_theme.dart';
 // Common widgets that can be reused across the app
 // This file serves as a placeholder for shared UI components
 
@@ -49,7 +50,7 @@ class ErrorWidget extends StatelessWidget {
           Icon(
             Icons.error_outline,
             size: 64,
-            color: Colors.red[400],
+            color: AppTheme.error,
           ),
           const SizedBox(height: 16),
           Text(
@@ -92,7 +93,7 @@ class EmptyStateWidget extends StatelessWidget {
           Icon(
             icon,
             size: 64,
-            color: Colors.grey[400],
+            color: AppTheme.mutedSoft,
           ),
           const SizedBox(height: 16),
           Text(
@@ -107,7 +108,7 @@ class EmptyStateWidget extends StatelessWidget {
             message,
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey[600],
+              color: AppTheme.muted,
             ),
             textAlign: TextAlign.center,
           ),

@@ -9,7 +9,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
 import 'package:lovefortune_app/core/models/self_discovery_model.dart';
 import 'package:lovefortune_app/core/models/personality_report_model.dart';
-import 'package:lovefortune_app/core/models/conflict_topic_model.dart';
 import 'package:lovefortune_app/core/models/conflict_guide_model.dart';
 
 final logger = Logger();

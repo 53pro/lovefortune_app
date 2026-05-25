@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lovefortune_app/core/models/conflict_topic_model.dart';
 import 'package:lovefortune_app/core/models/personality_report_model.dart';
-import 'package:lovefortune_app/core/models/profile_model.dart';
 import 'package:lovefortune_app/core/repositories/profile_repository.dart';
 import 'package:lovefortune_app/core/repositories/tips_repository.dart';
 import 'package:logger/logger.dart';
@@ -65,9 +64,9 @@ class TipsViewModel extends Notifier<TipsState> {
     return TipsState();
   }
 
-  Future<void> fetchTips() async {
+  Future<void> fetchTips({bool forceRefresh = false}) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
-    logger.i('TipsViewModel: 데이터 요청 시작...');
+    logger.i('TipsViewModel: 데이터 요청 시작 (forceRefresh: $forceRefresh)...');
     try {
       // 주간 질문을 요청하기 위해 프로필 정보를 먼저 가져옵니다.
       final myProfile = await _profileRepo.getMyProfile();
@@ -79,7 +78,7 @@ class TipsViewModel extends Notifier<TipsState> {
 
       // 주간 질문과 갈등 주제를 함께 불러옵니다.
       final question = await _tipsRepo.getWeeklyQuestion(myProfile, partnerProfile);
-      final topics = await _tipsRepo.getTodaysConflictTopics();
+      final topics = await _tipsRepo.getTodaysConflictTopics(forceRefresh: forceRefresh);
 
       logger.d('TipsViewModel: Repository로부터 질문 수신 완료: $question');
       logger.d('TipsViewModel: Repository로부터 갈등 주제 ${topics.length}개 수신 완료');

@@ -1,3 +1,4 @@
+import 'package:lovefortune_app/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -56,21 +57,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       request: const AdRequest(),
       nativeTemplateStyle: NativeTemplateStyle(
         templateType: TemplateType.medium,
-        mainBackgroundColor: Colors.white,
+        mainBackgroundColor: AppTheme.canvas,
         cornerRadius: 16.0,
         callToActionTextStyle: NativeTemplateTextStyle(
-          textColor: Colors.white,
-          backgroundColor: const Color(0xFF5B86E5),
+          textColor: AppTheme.onPrimary,
+          backgroundColor: AppTheme.primary,
           style: NativeTemplateFontStyle.bold,
           size: 16.0,
         ),
         primaryTextStyle: NativeTemplateTextStyle(
-          textColor: Colors.black,
+          textColor: AppTheme.ink,
           style: NativeTemplateFontStyle.bold,
           size: 16.0,
         ),
         secondaryTextStyle: NativeTemplateTextStyle(
-          textColor: Colors.grey,
+          textColor: AppTheme.muted,
           style: NativeTemplateFontStyle.normal,
           size: 14.0,
         ),
@@ -126,6 +127,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _buildDateHeader(),
+                    Center(child: Image.asset('assets/images/home_couple.png', height: 180)),
+                    const SizedBox(height: 24),
                     _buildCoupleInfoSection(state),
                     const SizedBox(height: 24),
                     if (state.isLoading)
@@ -145,7 +148,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 height: 320, // 광고 템플릿에 맞는 높이
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: const Color(0xFFEAEBEE)),
+                                  border: Border.all(color: AppTheme.hairline),
                                 ),
                                 child: AdWidget(ad: _nativeAd!),
                               ),
@@ -175,16 +178,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       margin: const EdgeInsets.only(bottom: 24.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.onPrimary,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFEAEBEE)),
+        border: Border.all(color: AppTheme.hairline),
       ),
       child: Center(
         child: RichText(
           text: TextSpan(
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey[800],
+              color: AppTheme.ink,
               fontFamily: 'Pretendard',
             ),
             children: <TextSpan>[
@@ -193,7 +196,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 text: DateFormat('EEEE', 'ko_KR').format(today),
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF5B86E5),
+                  color: AppTheme.primary,
                 ),
               ),
             ],
@@ -207,12 +210,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _buildProfile('나', state.myProfile, const Color(0xFF5B86E5)),
+        _buildProfile('나', state.myProfile, AppTheme.primary),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16.0),
-          child: Icon(Icons.favorite, color: Color(0xFFFF8A8A), size: 28),
+          child: Icon(Icons.favorite, color: AppTheme.brandPink, size: 28),
         ),
-        _buildProfile('너', state.partnerProfile, const Color(0xFFFF8A8A)),
+        _buildProfile('너', state.partnerProfile, AppTheme.brandPink),
       ],
     );
   }
@@ -229,7 +232,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: profile?.imageUrl == null
               ? Text(
             title,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: AppTheme.onPrimary, fontWeight: FontWeight.bold),
           )
               : null,
         ),
@@ -247,7 +250,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFEAEBEE)),
+        side: const BorderSide(color: AppTheme.hairline),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -258,7 +261,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey[600]),
+                  color: AppTheme.muted),
             ),
             const SizedBox(height: 16),
             Text(
@@ -266,7 +269,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               style: const TextStyle(
                 fontSize: 48,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFFFF8A8A),
+                color: AppTheme.brandPink,
               ),
             ),
             const SizedBox(height: 8),
@@ -286,7 +289,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFEAEBEE)),
+        side: const BorderSide(color: AppTheme.hairline),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -297,14 +300,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 16),
             _AdviceItem(
               icon: Icons.sentiment_very_satisfied,
-              iconColor: Colors.green,
+              iconColor: AppTheme.success,
               title: '긍정적인 점',
               content: state.horoscope!.positiveAdvice,
             ),
             const SizedBox(height: 12),
             _AdviceItem(
               icon: Icons.sentiment_neutral,
-              iconColor: Colors.orange,
+              iconColor: AppTheme.warning,
               title: '주의할 점',
               content: state.horoscope!.cautionAdvice,
             ),
@@ -331,7 +334,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF8A8A),
+                backgroundColor: AppTheme.brandPink,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -341,10 +344,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.video_collection, color: Colors.white),
+                  Icon(Icons.video_collection, color: AppTheme.onPrimary),
                   SizedBox(width: 8),
                   Text('광고 보고 스페셜 조언 보기',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      style: TextStyle(color: AppTheme.onPrimary, fontWeight: FontWeight.bold)),
                 ],
               ),
             )
@@ -359,7 +362,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFEAEBEE)),
+        side: const BorderSide(color: AppTheme.hairline),
       ),
       child: InkWell(
         onTap: () {
@@ -376,23 +379,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           }
         },
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
+        child: const Padding(
+          padding: EdgeInsets.all(20.0),
           child: Row(
             children: [
-              Icon(Icons.psychology_outlined, color: const Color(0xFF5B86E5), size: 32),
-              const SizedBox(width: 16),
-              const Expanded(
+              Icon(Icons.psychology_outlined, color: AppTheme.primary, size: 32),
+              SizedBox(width: 16),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('새로운 나를 발견하는 시간', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     SizedBox(height: 4),
-                    Text('오늘의 나를 위한 성장 팁 확인하기', style: TextStyle(color: Colors.grey)),
+                    Text('오늘의 나를 위한 성장 팁 확인하기', style: TextStyle(color: AppTheme.muted)),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Colors.grey),
+              Icon(Icons.chevron_right, color: AppTheme.muted),
             ],
           ),
         ),
@@ -405,7 +408,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFEAEBEE)),
+        side: const BorderSide(color: AppTheme.hairline),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -431,7 +434,7 @@ class _CardTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: Colors.grey[700]),
+        Icon(icon, size: 16, color: AppTheme.muted),
         const SizedBox(width: 8),
         Text(
           title,
@@ -468,7 +471,7 @@ class _AdviceItem extends StatelessWidget {
             children: [
               Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 4),
-              Text(content, style: TextStyle(color: Colors.grey[700], height: 1.5)),
+              Text(content, style: TextStyle(color: AppTheme.muted, height: 1.5)),
             ],
           ),
         ),

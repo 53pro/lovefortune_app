@@ -13,7 +13,7 @@ final logger = Logger();
 final aiServiceProvider = Provider((ref) => AIService());
 
 class AIService {
-  static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+  static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent';
   static final String _apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
 
   // 공통 API 호출 로직을 만들어 코드를 재사용합니다.
@@ -181,30 +181,42 @@ class AIService {
     - 파트너 생년월일: $partnerBirth
     """;
   }
-  // 자기 발견 팁 생성을 위한 새로운 프롬프트 (추가)
   String _buildSelfDiscoveryPrompt(String userBirth) {
     return """
     ### #1. 역할 (Persona)
-    당신은 사주 명리학을 기반으로 개인의 성장을 돕는 현명한 라이프 코치입니다. 사용자의 타고난 기운을 분석하여, 오늘 하루 자신을 더 깊이 이해하고 발전시킬 수 있는 통찰력 있는 조언을 제공합니다.
+    당신은 사주 명리학을 기반으로 개인의 성장을 돕는 현명한 라이프 코치입니다. 사용자의 타고난 기운을 분석하여, 오늘 하루 자신을 더 깊이 이해하고 발전시킬 수 있는 통찰력 있고 구체적인 조언을 제공합니다.
 
     ### #2. 목표 (Goal)
-    입력된 사용자의 생년월일을 바탕으로, '오늘의 나'를 위한 자기 발견 콘텐츠를 아래의 JSON 형식에 맞춰 생성합니다.
+    입력된 사용자의 생년월일을 바탕으로, '오늘의 나'를 위한 구체적이고 깊이 있는 자기 발견 콘텐츠를 아래의 JSON 형식에 맞춰 생성합니다.
 
     ### #3. 지침 (Instructions)
-    1.  **daily_theme:** 오늘 사용자의 에너지에 가장 어울리는 키워드를 한 단어로 제시해주세요. (예: "성찰", "도전", "소통", "휴식")
-    2.  **growth_tip:** 오늘의 테마와 관련하여, 사용자가 실천할 수 있는 구체적이고 긍정적인 자기 성장 팁을 한 문장으로 제안해주세요.
-    3.  **reflective_question:** 하루 동안 스스로에게 던져볼 만한 깊이 있는 질문을 한 가지 만들어주세요.
+    1.  **daily_theme:** 오늘 사용자의 에너지에 가장 어울리는 핵심 키워드를 한 단어로 제시해주세요. (예: "성찰", "도전", "소통", "휴식")
+    2.  **detailed_analysis:** 사용자의 타고난 성향과 오늘의 기운을 바탕으로, 왜 오늘 이 테마가 중요한지 2~3문장으로 심층 분석해주세요.
+    3.  **growth_tip:** 오늘의 테마와 관련하여, 사용자가 실천할 수 있는 긍정적인 자기 성장 팁을 한 문장으로 제안해주세요.
+    4.  **actionable_steps:** 'growth_tip'을 바로 행동으로 옮길 수 있는 구체적인 실천 가이드를 2~3단계의 리스트(배열)로 제시해주세요. (예: ["아침에 일어나서 물 한 잔 마시기", "5분간 명상하기"])
+    5.  **recommended_habit:** 오늘 하루 실천해보면 좋을 작고 구체적인 습관을 하나 제안해주세요.
+    6.  **reflective_question:** 하루 동안 스스로에게 던져볼 만한 깊이 있는 질문을 한 가지 만들어주세요.
 
     ### #4. 제약 조건 (Constraints)
-    - 모든 답변은 개인의 성장에 초점을 맞춰야 합니다.
-    - 긍정적이고 영감을 주는 톤을 유지해주세요.
+    - 모든 답변은 개인의 구체적인 행동 변화와 긍정적인 성장에 초점을 맞춰야 합니다.
+    - 너무 추상적인 말보다는, 현실에서 바로 적용할 수 있는 구체적인 내용을 포함하세요.
     - 반드시 지정된 JSON 형식으로만 출력해야 합니다.
 
-    ### #5. 최종 요청 (Final Request)
+    ### #5. JSON 출력 형식 예시 (Example)
+    {
+      "daily_theme": "...",
+      "detailed_analysis": "...",
+      "growth_tip": "...",
+      "actionable_steps": ["...", "..."],
+      "recommended_habit": "...",
+      "reflective_question": "..."
+    }
+
+    ### #6. 최종 요청 (Final Request)
     이제 아래의 실제 입력 정보를 바탕으로, 위의 모든 규칙을 준수하여 JSON 형식의 자기 발견 팁 콘텐츠만 생성해주세요.
 
     [입력]
-    - 사용자 생년월일: $userBirth
+    - 사용자 생년월일: \$userBirth
     """;
   }
 

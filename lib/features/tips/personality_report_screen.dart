@@ -1,3 +1,4 @@
+import 'package:lovefortune_app/core/theme/app_theme.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -124,7 +125,7 @@ class _PersonalityReportScreenState extends State<PersonalityReportScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.lock_outline, size: 60, color: Colors.grey),
+            const Icon(Icons.lock_outline, size: 60, color: AppTheme.muted),
             const SizedBox(height: 20),
             const Text(
               '관계 설명서가 잠겨있어요',
@@ -136,7 +137,7 @@ class _PersonalityReportScreenState extends State<PersonalityReportScreen> {
                   ? '광고를 불러오지 못했어요.\n아래 버튼을 눌러 바로 설명서를 확인하세요.'
                   : '짧은 광고를 시청하고\n두 분의 관계 설명서를 확인해보세요!',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
+              style: const TextStyle(fontSize: 16, color: AppTheme.muted),
             ),
             const SizedBox(height: 32),
             if (_adFailedToLoad)
@@ -156,12 +157,12 @@ class _PersonalityReportScreenState extends State<PersonalityReportScreen> {
                     : const SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.onPrimary),
                 ),
                 label: Text(_isAdLoaded ? '광고 보고 설명서 확인' : '광고 불러오는 중...'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF5B86E5),
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: AppTheme.onPrimary,
                 ),
               ),
           ],
@@ -203,28 +204,28 @@ class _PersonalityReportScreenState extends State<PersonalityReportScreen> {
           title: report.myPersonalityTitle,
           description: report.myPersonalityDescription,
           icon: Icons.person_outline,
-          iconColor: const Color(0xFF5B86E5),
+          iconColor: AppTheme.primary,
         ),
         const SizedBox(height: 16),
         _buildSection(
           title: report.partnerPersonalityTitle,
           description: report.partnerPersonalityDescription,
           icon: Icons.favorite_border,
-          iconColor: const Color(0xFFFF8A8A),
+          iconColor: AppTheme.brandPink,
         ),
         const SizedBox(height: 16),
         _buildSection(
           title: '두 분의 시너지',
           description: report.relationshipSynergy,
           icon: Icons.auto_awesome_outlined,
-          iconColor: const Color(0xFF34C759),
+          iconColor: AppTheme.success,
         ),
         const SizedBox(height: 16),
         _buildSection(
           title: '기억해주세요',
           description: report.relationshipCaution,
           icon: Icons.shield_outlined,
-          iconColor: const Color(0xFFFF9F43),
+          iconColor: AppTheme.warning,
         ),
       ],
     );
@@ -236,12 +237,12 @@ class _PersonalityReportScreenState extends State<PersonalityReportScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _buildProfile(widget.myProfile, const Color(0xFF5B86E5)),
+          _buildProfile(widget.myProfile, AppTheme.primary),
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.0),
-            child: Icon(Icons.favorite, color: Color(0xFFFF8A8A), size: 28),
+            child: Icon(Icons.favorite, color: AppTheme.brandPink, size: 28),
           ),
-          _buildProfile(widget.partnerProfile, const Color(0xFFFF8A8A)),
+          _buildProfile(widget.partnerProfile, AppTheme.brandPink),
         ],
       ),
     );
@@ -255,7 +256,7 @@ class _PersonalityReportScreenState extends State<PersonalityReportScreen> {
           backgroundColor: color,
           child: Text(
             profile.nickname.isNotEmpty ? profile.nickname[0] : '?',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24),
+            style: const TextStyle(color: AppTheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 24),
           ),
         ),
         const SizedBox(height: 8),
@@ -299,7 +300,7 @@ class _PersonalityReportScreenState extends State<PersonalityReportScreen> {
             const SizedBox(height: 16),
             Text(
               description,
-              style: TextStyle(fontSize: 16, height: 1.7, color: Colors.grey[700]),
+              style: TextStyle(fontSize: 16, height: 1.7, color: AppTheme.muted),
             ),
           ],
         ),

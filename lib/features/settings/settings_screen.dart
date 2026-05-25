@@ -129,7 +129,7 @@ class SettingsScreen extends ConsumerWidget {
         style: const TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.bold,
-          color: Colors.grey,
+          color: AppTheme.muted,
         ),
       ),
     );

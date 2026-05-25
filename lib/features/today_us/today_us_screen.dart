@@ -1,3 +1,4 @@
+import 'package:lovefortune_app/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,7 +58,7 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
       request: const AdRequest(),
       nativeTemplateStyle: NativeTemplateStyle(
         templateType: TemplateType.medium,
-        mainBackgroundColor: Colors.white,
+        mainBackgroundColor: AppTheme.canvas,
         cornerRadius: 16.0,
       ),
     );
@@ -111,6 +112,8 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _buildDateHeader(),
+                    Center(child: Image.asset('assets/images/home_couple.png', height: 180)),
+                    const SizedBox(height: 24),
                     _buildCoupleInfoSection(state),
                     const SizedBox(height: 24),
                     if (state.isLoading)
@@ -131,7 +134,7 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
                                   height: 320,
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: const Color(0xFFEAEBEE)),
+                                    border: Border.all(color: AppTheme.hairline),
                                   ),
                                   child: AdWidget(ad: _nativeAd!),
                                 ),
@@ -160,12 +163,12 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.cloud_off_outlined, color: Colors.grey, size: 48),
+            const Icon(Icons.cloud_off_outlined, color: AppTheme.muted, size: 48),
             const SizedBox(height: 16),
             const Text(
               '운세를 불러오는 데 실패했어요.\n네트워크 연결을 확인해주세요.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: TextStyle(fontSize: 16, color: AppTheme.muted),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -175,8 +178,8 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
               icon: const Icon(Icons.refresh),
               label: const Text('다시 불러오기'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF5B86E5),
-                foregroundColor: Colors.white,
+                backgroundColor: AppTheme.primary,
+                foregroundColor: AppTheme.onPrimary,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
             )
@@ -193,12 +196,12 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.info_outline, color: Colors.grey, size: 48),
+            const Icon(Icons.info_outline, color: AppTheme.muted, size: 48),
             const SizedBox(height: 16),
             const Text(
               '우선 나랑 상대방의 생일 정보를 입력해주세요',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: TextStyle(fontSize: 16, color: AppTheme.muted),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -210,8 +213,8 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
               icon: const Icon(Icons.edit_note),
               label: const Text('정보 입력하러 가기'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF5B86E5),
-                foregroundColor: Colors.white,
+                backgroundColor: AppTheme.primary,
+                foregroundColor: AppTheme.onPrimary,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
             )
@@ -228,16 +231,16 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       margin: const EdgeInsets.only(bottom: 24.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.onPrimary,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFEAEBEE)),
+        border: Border.all(color: AppTheme.hairline),
       ),
       child: Center(
         child: RichText(
           text: TextSpan(
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey[800],
+              color: AppTheme.ink,
               fontFamily: 'Pretendard',
             ),
             children: <TextSpan>[
@@ -246,7 +249,7 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
                 text: DateFormat('EEEE', 'ko_KR').format(today),
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF5B86E5),
+                  color: AppTheme.primary,
                 ),
               ),
             ],
@@ -260,12 +263,12 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _buildProfile('나', state.myProfile, const Color(0xFF5B86E5)),
+        _buildProfile('나', state.myProfile, AppTheme.primary),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16.0),
-          child: Icon(Icons.favorite, color: Color(0xFFFF8A8A), size: 28),
+          child: Icon(Icons.favorite, color: AppTheme.brandPink, size: 28),
         ),
-        _buildProfile('너', state.partnerProfile, const Color(0xFFFF8A8A)),
+        _buildProfile('너', state.partnerProfile, AppTheme.brandPink),
       ],
     );
   }
@@ -282,7 +285,7 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
           child: profile?.imageUrl == null
               ? Text(
             title,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: AppTheme.onPrimary, fontWeight: FontWeight.bold),
           )
               : null,
         ),
@@ -300,7 +303,7 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFEAEBEE)),
+        side: const BorderSide(color: AppTheme.hairline),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -311,7 +314,7 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
               style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey[600]),
+                  color: AppTheme.muted),
             ),
             const SizedBox(height: 16),
             Text(
@@ -319,7 +322,7 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
               style: const TextStyle(
                 fontSize: 48,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFFFF8A8A),
+                color: AppTheme.brandPink,
               ),
             ),
             const SizedBox(height: 8),
@@ -339,7 +342,7 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFEAEBEE)),
+        side: const BorderSide(color: AppTheme.hairline),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -350,14 +353,14 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
             const SizedBox(height: 16),
             _AdviceItem(
               icon: Icons.sentiment_very_satisfied,
-              iconColor: Colors.green,
+              iconColor: AppTheme.success,
               title: '긍정적인 점',
               content: state.horoscope!.positiveAdvice,
             ),
             const SizedBox(height: 12),
             _AdviceItem(
               icon: Icons.sentiment_neutral,
-              iconColor: Colors.orange,
+              iconColor: AppTheme.warning,
               title: '주의할 점',
               content: state.horoscope!.cautionAdvice,
             ),
@@ -405,7 +408,7 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF8A8A),
+                backgroundColor: AppTheme.brandPink,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -416,15 +419,15 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
                   ? const SizedBox(
                 height: 24,
                 width: 24,
-                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                child: CircularProgressIndicator(color: AppTheme.onPrimary, strokeWidth: 2),
               )
                   : const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.video_collection, color: Colors.white),
+                  Icon(Icons.video_collection, color: AppTheme.onPrimary),
                   SizedBox(width: 8),
                   Text('광고 보고 스페셜 조언 보기',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      style: TextStyle(color: AppTheme.onPrimary, fontWeight: FontWeight.bold)),
                 ],
               ),
             )
@@ -439,7 +442,7 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFEAEBEE)),
+        side: const BorderSide(color: AppTheme.hairline),
       ),
       child: InkWell(
         onTap: () {
@@ -452,23 +455,23 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
           }
         },
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
+        child: const Padding(
+          padding: EdgeInsets.all(20.0),
           child: Row(
             children: [
-              Icon(Icons.psychology_outlined, color: const Color(0xFF5B86E5), size: 32),
-              const SizedBox(width: 16),
-              const Expanded(
+              Icon(Icons.psychology_outlined, color: AppTheme.primary, size: 32),
+              SizedBox(width: 16),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('새로운 나를 발견하는 시간', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     SizedBox(height: 4),
-                    Text('오늘의 나를 위한 성장 팁 확인하기', style: TextStyle(color: Colors.grey)),
+                    Text('오늘의 나를 위한 성장 팁 확인하기', style: TextStyle(color: AppTheme.muted)),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Colors.grey),
+              Icon(Icons.chevron_right, color: AppTheme.muted),
             ],
           ),
         ),
@@ -481,7 +484,7 @@ class _TodayUsScreenState extends ConsumerState<TodayUsScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFEAEBEE)),
+        side: const BorderSide(color: AppTheme.hairline),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -507,7 +510,7 @@ class _CardTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: Colors.grey[700]),
+        Icon(icon, size: 16, color: AppTheme.muted),
         const SizedBox(width: 8),
         Text(
           title,
@@ -544,7 +547,7 @@ class _AdviceItem extends StatelessWidget {
             children: [
               Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 4),
-              Text(content, style: TextStyle(color: Colors.grey[700], height: 1.5)),
+              Text(content, style: TextStyle(color: AppTheme.muted, height: 1.5)),
             ],
           ),
         ),

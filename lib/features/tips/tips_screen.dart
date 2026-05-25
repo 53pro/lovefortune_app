@@ -1,3 +1,4 @@
+import 'package:lovefortune_app/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -62,7 +63,7 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
       request: const AdRequest(),
       nativeTemplateStyle: NativeTemplateStyle(
         templateType: TemplateType.medium,
-        mainBackgroundColor: Colors.white,
+        mainBackgroundColor: AppTheme.canvas,
         cornerRadius: 16.0,
       ),
     );
@@ -83,7 +84,7 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
             icon: const Icon(Icons.casino_outlined),
             tooltip: '팁 새로고침',
             onPressed: () {
-              viewModel.fetchTips();
+              viewModel.fetchTips(forceRefresh: true);
             },
           ),
         ],
@@ -103,7 +104,7 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
                 height: 320,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFEAEBEE)),
+                  border: Border.all(color: AppTheme.hairline),
                 ),
                 child: AdWidget(ad: _nativeAd!),
               ),
@@ -121,7 +122,7 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFEAEBEE)),
+        side: const BorderSide(color: AppTheme.hairline),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -132,7 +133,7 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text('두 분의 타고난 성향을 분석하여 서로를 더 깊이 이해할 수 있도록 도와드려요.',
-                style: TextStyle(color: Colors.grey[600])),
+                style: TextStyle(color: AppTheme.muted)),
             const SizedBox(height: 16),
             ElevatedButton(
                 onPressed: () async {
@@ -187,7 +188,7 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
   Widget _buildWeeklyQuestionCard(String? question) {
     return Card(
       elevation: 0,
-      color: const Color(0xFF5B86E5),
+      color: AppTheme.primary,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -197,13 +198,13 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
                 style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white)),
+                    color: AppTheme.onPrimary)),
             const SizedBox(height: 12),
             Text(
               question ?? '질문을 불러오는 중입니다...',
               textAlign: TextAlign.center,
               style:
-              TextStyle(fontSize: 20, color: Colors.white.withOpacity(0.9)),
+              TextStyle(fontSize: 20, color: AppTheme.onPrimary.withOpacity(0.9)),
             ),
           ],
         ),
@@ -217,7 +218,7 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFEAEBEE)),
+        side: const BorderSide(color: AppTheme.hairline),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),

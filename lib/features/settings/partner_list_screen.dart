@@ -69,7 +69,7 @@ class _PartnerListScreenState extends ConsumerState<PartnerListScreen> {
               leading: _isEditMode
               // 편집 모드일 때 보여줄 삭제 버튼
                   ? IconButton(
-                icon: const Icon(Icons.remove_circle, color: Colors.red),
+                icon: const Icon(Icons.remove_circle, color: AppTheme.error),
                 onPressed: () async {
                   final confirm = await showDialog<bool>(
                     context: context,
@@ -78,7 +78,7 @@ class _PartnerListScreenState extends ConsumerState<PartnerListScreen> {
                       content: Text("'${partner.nickname}' 님을 목록에서 삭제하시겠습니까?"),
                       actions: [
                         TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('취소')),
-                        TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('삭제', style: TextStyle(color: Colors.red))),
+                        TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('삭제', style: TextStyle(color: AppTheme.error))),
                       ],
                     ),
                   );
@@ -89,11 +89,11 @@ class _PartnerListScreenState extends ConsumerState<PartnerListScreen> {
               )
               // 일반 모드일 때 보여줄 프로필 아바타
                   : CircleAvatar(
-                backgroundColor: isSelected ? AppTheme.primaryColor : Colors.grey[300],
+                backgroundColor: isSelected ? AppTheme.primaryColor : AppTheme.hairline,
                 child: Text(
                   partner.nickname.isNotEmpty ? partner.nickname[0] : '?',
                   style: TextStyle(
-                    color: isSelected ? Colors.white : AppTheme.primaryColor,
+                    color: isSelected ? AppTheme.onPrimary : AppTheme.primaryColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -136,7 +136,7 @@ class _PartnerListScreenState extends ConsumerState<PartnerListScreen> {
           );
         },
         backgroundColor: AppTheme.primaryColor,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(Icons.add, color: AppTheme.onPrimary),
       ),
     );
   }

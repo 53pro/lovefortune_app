@@ -1,7 +1,7 @@
 name: lovefortune_app
 description: "오늘 우리는 - AI 운세 기반의 커플 관계 조언 앱"
 publish_to: 'none'
-version: 1.0.3+4
+version: 1.0.5+6
 
 environment:
   sdk: '>=3.2.3 <4.0.0'
@@ -41,6 +41,7 @@ dependencies:
   firebase_storage: ^11.6.0
   # flutter_localizations 패키지를 추가합니다.
   upgrader: ^9.0.0 # 이 줄을 추가합니다.
+  sign_in_with_apple: ^7.0.1
 
 dev_dependencies:
   flutter_test:
@@ -57,6 +58,7 @@ flutter:
   # 명시하는 것이 더 안정적입니다.
   assets:
     - assets/images/google_logo.png
+    - assets/images/
     # .env 파일을 애셋으로 등록합니다. (중요)
     - .env
 

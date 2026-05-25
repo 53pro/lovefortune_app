@@ -1,3 +1,4 @@
+import 'package:lovefortune_app/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lovefortune_app/features/main/main_screen.dart';
@@ -68,7 +69,7 @@ class PersonalityScreen extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.psychology, size: 80, color: Color(0xFF5B86E5)),
+            const Icon(Icons.psychology, size: 80, color: AppTheme.primary),
             const SizedBox(height: 24),
             const Text(
               '나의 연애 성향 알아보기',
@@ -78,7 +79,7 @@ class PersonalityScreen extends ConsumerWidget {
             const Text(
               '간단한 테스트를 통해 당신의 연애 스타일을 발견하고\n맞춤형 조언을 확인해보세요!',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: TextStyle(fontSize: 16, color: AppTheme.muted),
             ),
             const SizedBox(height: 40),
             ElevatedButton(
@@ -119,7 +120,7 @@ class PersonalityScreen extends ConsumerWidget {
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF5B86E5),
+                    color: AppTheme.primary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -183,7 +184,7 @@ class PersonalityScreen extends ConsumerWidget {
                   children: [
                     const Text(
                       '당신의 연애 성향은...',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                      style: TextStyle(fontSize: 16, color: AppTheme.muted),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -191,7 +192,7 @@ class PersonalityScreen extends ConsumerWidget {
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF5B86E5),
+                        color: AppTheme.primary,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -207,28 +208,42 @@ class PersonalityScreen extends ConsumerWidget {
                     Text(
                       resultData['description']! as String,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 15, height: 1.7, color: Colors.grey),
+                      style: const TextStyle(fontSize: 15, height: 1.7, color: AppTheme.muted),
                     ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                ref.read(mainScreenIndexProvider.notifier).state = 1;
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  ref.read(mainScreenIndexProvider.notifier).state = 1;
+                },
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: const Text('오늘우리 운세 보러가기'),
               ),
-              child: const Text('오늘우리 운세 보러가기'),
             ),
             const SizedBox(height: 12),
-            TextButton(
-              onPressed: () {
-                viewModel.startTest();
-              },
-              child: const Text('연애 성향 다시 테스트하기'),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () {
+                  viewModel.startTest();
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.brandPink,
+                  side: const BorderSide(color: AppTheme.brandPink, width: 1.5),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('연애 성향 다시 테스트하기'),
+              ),
             ),
           ],
         ),

@@ -107,12 +107,12 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   },
                   child: CircleAvatar(
                     radius: 60,
-                    backgroundColor: Colors.grey[200],
+                    backgroundColor: AppTheme.hairlineSoft,
                     backgroundImage: widget.profile?.imageUrl != null
                         ? NetworkImage(widget.profile!.imageUrl!)
                         : null,
                     child: widget.profile?.imageUrl == null
-                        ? Icon(Icons.camera_alt, size: 40, color: Colors.grey[400])
+                        ? Icon(Icons.camera_alt, size: 40, color: AppTheme.mutedSoft)
                         : null,
                   ),
                 ),
@@ -148,7 +148,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   backgroundColor: AppTheme.primaryColor,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text('저장하기', style: TextStyle(color: Colors.white)),
+                child: const Text('저장하기', style: TextStyle(color: AppTheme.onPrimary)),
               ),
             ],
           ),

@@ -1,3 +1,4 @@
+import 'package:lovefortune_app/core/theme/app_theme.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lovefortune_app/core/models/special_advice_model.dart';
@@ -110,7 +111,7 @@ class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.lock_outline, size: 60, color: Colors.grey),
+            const Icon(Icons.lock_outline, size: 60, color: AppTheme.muted),
             const SizedBox(height: 20),
             const Text(
               '비밀 조언이 잠겨있어요',
@@ -122,7 +123,7 @@ class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
                   ? '광고를 불러오지 못했어요.\n아래 버튼을 눌러 바로 조언을 확인하세요.'
                   : '짧은 광고를 시청하고\n오늘의 스페셜 조언을 확인해보세요!',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
+              style: const TextStyle(fontSize: 16, color: AppTheme.muted),
             ),
             const SizedBox(height: 32),
             if (_adFailedToLoad)
@@ -133,8 +134,8 @@ class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
                   });
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF8A8A),
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppTheme.brandPink,
+                  foregroundColor: AppTheme.onPrimary,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                 ),
                 child: const Text('바로 조언 보기'),
@@ -147,12 +148,12 @@ class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
                     : const SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.onPrimary),
                 ),
                 label: Text(_isAdLoaded ? '광고 보고 조언 확인하기' : '광고 불러오는 중...'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF8A8A),
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppTheme.brandPink,
+                  foregroundColor: AppTheme.onPrimary,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                   textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
@@ -186,12 +187,14 @@ class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
+          Center(child: Image.asset('assets/images/advice_couple.png', height: 180)),
+          const SizedBox(height: 24),
           _buildAdviceCard(
             icon: Icons.vpn_key_outlined,
             title: '우리 둘만의 비밀 코드',
             content: advice.synergyPoint,
             highlight: advice.conflictWarning,
-            iconColor: const Color(0xFF5B86E5),
+            iconColor: AppTheme.primary,
           ),
           const SizedBox(height: 16),
           _buildAdviceCard(
@@ -199,7 +202,7 @@ class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
             title: '미래 엿보기',
             content: advice.weekendForecast,
             highlight: advice.monthlyLuckyDay,
-            iconColor: const Color(0xFFFF8A8A),
+            iconColor: AppTheme.brandPink,
           ),
         ],
       ),
@@ -217,7 +220,7 @@ class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFEAEBEE)),
+        side: const BorderSide(color: AppTheme.hairline),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -232,7 +235,7 @@ class _SpecialAdviceScreenState extends State<SpecialAdviceScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            Text(content, style: TextStyle(fontSize: 16, height: 1.6, color: Colors.grey[700])),
+            Text(content, style: TextStyle(fontSize: 16, height: 1.6, color: AppTheme.muted)),
             const SizedBox(height: 16),
             Container(
               width: double.infinity,

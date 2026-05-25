@@ -1,7 +1,7 @@
+import 'package:lovefortune_app/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lovefortune_app/features/auth/auth_viewmodel.dart';
-import 'package:lovefortune_app/features/auth/sign_up_screen.dart'; // 새로 만든 화면 import
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
@@ -12,16 +12,6 @@ class AuthScreen extends ConsumerStatefulWidget {
 }
 
 class _AuthScreenState extends ConsumerState<AuthScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
@@ -32,7 +22,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.errorMessage!),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.error,
           ),
         );
       }
@@ -46,14 +36,16 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 60),
+              const SizedBox(height: 48),
+              Center(child: Image.asset('assets/images/auth_couple.png', height: 240)),
+              const SizedBox(height: 32),
               const Text(
                 '오늘 우리는',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF5B86E5),
+                  color: AppTheme.primary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -62,38 +54,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey,
+                  color: AppTheme.muted,
                 ),
               ),
-              const SizedBox(height: 50),
-              TextField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: '이메일',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: '비밀번호',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock_outline),
-                ),
-                obscureText: true,
-              ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 100),
               if (authState.isLoading)
                 const Center(child: CircularProgressIndicator())
               else
-                _buildAuthButtons(authViewModel),
-              const SizedBox(height: 24),
-              _buildSocialLoginDivider(),
-              const SizedBox(height: 24),
-              _buildSocialLoginButtons(authViewModel),
+                _buildSocialLoginButtons(authViewModel),
             ],
           ),
         ),
@@ -101,74 +69,61 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     );
   }
 
-  Widget _buildAuthButtons(AuthViewModel viewModel) {
+  Widget _buildSocialLoginButtons(AuthViewModel viewModel) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ElevatedButton(
+        ElevatedButton.icon(
           onPressed: () {
-            viewModel.signInWithEmail(
-              _emailController.text.trim(),
-              _passwordController.text.trim(),
-            );
+            viewModel.signInWithGoogle();
           },
+          icon: const FaIcon(
+            FontAwesomeIcons.google,
+            color: AppTheme.brandCoral,
+          ),
+          label: const Text(
+            'Google로 로그인',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.ink,
+            ),
+          ),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF5B86E5),
+            backgroundColor: AppTheme.canvas,
             padding: const EdgeInsets.symmetric(vertical: 16),
-            textStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: const BorderSide(color: AppTheme.muted, width: 0.5),
             ),
           ),
-          child: const Text('이메일로 로그인', style: TextStyle(color: Colors.white)),
         ),
-        const SizedBox(height: 12),
-        OutlinedButton(
+        const SizedBox(height: 16),
+        ElevatedButton.icon(
           onPressed: () {
-            // 회원가입 로직 대신, SignUpScreen으로 이동하도록 수정
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => const SignUpScreen()),
-            );
+            viewModel.signInWithApple();
           },
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            textStyle: const TextStyle(
+          icon: const FaIcon(
+            FontAwesomeIcons.apple,
+            color: AppTheme.onPrimary,
+          ),
+          label: const Text(
+            'Apple로 로그인',
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
+              color: AppTheme.onPrimary,
             ),
           ),
-          child: const Text('이메일로 회원가입'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.ink,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
         ),
       ],
-    );
-  }
-
-  Widget _buildSocialLoginDivider() {
-    return const Row(
-      children: [
-        Expanded(child: Divider()),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8.0),
-          child: Text('또는', style: TextStyle(color: Colors.grey)),
-        ),
-        Expanded(child: Divider()),
-      ],
-    );
-  }
-
-  Widget _buildSocialLoginButtons(AuthViewModel viewModel) {
-    return Center(
-      child: IconButton(
-        onPressed: () {
-          viewModel.signInWithGoogle();
-        },
-        // Image.asset 대신 FaIcon 위젯을 사용합니다.
-        icon: const FaIcon(
-          FontAwesomeIcons.google,
-          color: Color(0xFFDB4437), // 구글 로고 색상
-        ),
-        iconSize: 40,
-      ),
     );
   }
 }

@@ -13,8 +13,8 @@ void showProfileNeededPopup(BuildContext context, WidgetRef ref) {
         TextButton(
           onPressed: () {
             Navigator.of(context).pop(); // 팝업 닫기
-            // '내 정보' 탭(인덱스 3)으로 이동
-            ref.read(mainScreenIndexProvider.notifier).state = 3;
+            // '내 정보' 탭(인덱스 4)으로 이동
+            ref.read(mainScreenIndexProvider.notifier).state = 4;
           },
           child: const Text('정보 입력하러 가기'),
         ),

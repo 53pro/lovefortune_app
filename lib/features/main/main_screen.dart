@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lovefortune_app/features/auth/auth_providers.dart';
 import 'package:lovefortune_app/features/personality/personality_screen.dart';
 import 'package:lovefortune_app/features/today_us/today_us_screen.dart';
+import 'package:lovefortune_app/features/love_counseling/views/love_counseling_screen.dart';
 import 'package:lovefortune_app/features/settings/settings_screen.dart';
 import 'package:lovefortune_app/features/tips/tips_screen.dart';
 import 'package:lovefortune_app/features/today_us/today_us_viewmodel.dart';
@@ -14,6 +15,7 @@ final mainScreenIndexProvider = StateProvider<int>((ref) => 0);
 const List<Widget> _widgetOptions = <Widget>[
   PersonalityScreen(),
   TodayUsScreen(),
+  LoveCounselingScreen(),
   TipsScreen(),
   SettingsScreen(),
 ];
@@ -51,7 +53,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final isProfileComplete = ref.watch(profileCompletenessProvider).value ?? false;
 
     void onItemTapped(int index) {
-      if (!isProfileComplete && index != 3) {
+      if (!isProfileComplete && index != 4) {
         // SnackBar 대신 공용 팝업 함수를 호출합니다.
         showProfileNeededPopup(context, ref);
       } else {
@@ -69,22 +71,27 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
+            activeIcon: Icon(Icons.home_rounded),
             label: '홈',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.psychology_outlined),
-            activeIcon: Icon(Icons.psychology),
+            icon: Icon(Icons.favorite_border),
+            activeIcon: Icon(Icons.favorite_rounded),
             label: '오늘우리',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.lightbulb_outline),
-            activeIcon: Icon(Icons.lightbulb),
+            icon: Icon(Icons.forum_outlined),
+            activeIcon: Icon(Icons.forum_rounded),
+            label: '대나무숲',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.auto_stories_outlined),
+            activeIcon: Icon(Icons.auto_stories_rounded),
             label: '관계 팁',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
+            icon: Icon(Icons.face_outlined),
+            activeIcon: Icon(Icons.face_rounded),
             label: '내 정보',
           ),
         ],

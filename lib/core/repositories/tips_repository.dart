@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -70,14 +69,14 @@ class TipsRepository {
     }
   }
 
-  Future<List<ConflictTopicModel>> getTodaysConflictTopics() async {
-    logger.i('--- 오늘의 갈등 주제 가져오기 시작 ---');
+  Future<List<ConflictTopicModel>> getTodaysConflictTopics({bool forceRefresh = false}) async {
+    logger.i('--- 오늘의 갈등 주제 가져오기 시작 (forceRefresh: $forceRefresh) ---');
     final todayString = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final cachedDate = _prefs.getString('conflict_cached_date');
     logger.d('오늘 날짜: $todayString, 캐시된 날짜: $cachedDate');
 
     final cachedTopicsJson = _prefs.getString('conflict_cached_topics');
-    if (cachedDate == todayString && cachedTopicsJson != null) {
+    if (!forceRefresh && cachedDate == todayString && cachedTopicsJson != null) {
       logger.i('✅ 캐시된 갈등 해결 주제를 반환합니다.');
       final List<dynamic> decoded = jsonDecode(cachedTopicsJson);
       return decoded.map((data) => ConflictTopicModel.fromMap(Map<String, dynamic>.from(data), data['id'])).toList();
@@ -149,9 +148,9 @@ class TipsRepository {
     final todayString = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final myBirthString = DateFormat('yyyy-MM-dd').format(myProfile.birthdate);
 
-    final cachedDate = _prefs.getString('self_tip_cached_date');
-    final cachedMyBirth = _prefs.getString('self_tip_my_birth');
-    final cachedTipJson = _prefs.getString('self_tip_data');
+    final cachedDate = _prefs.getString('self_tip_cached_date_v2');
+    final cachedMyBirth = _prefs.getString('self_tip_my_birth_v2');
+    final cachedTipJson = _prefs.getString('self_tip_data_v2');
 
     // 오늘 날짜와 내 생일 정보가 모두 일치하면 캐시된 데이터를 반환합니다.
     if (cachedDate == todayString &&
@@ -166,9 +165,9 @@ class TipsRepository {
     final tip = await _aiService.getSelfDiscoveryTip(myBirthString);
 
     // 새로 받아온 데이터를 캐시에 저장합니다.
-    await _prefs.setString('self_tip_cached_date', todayString);
-    await _prefs.setString('self_tip_my_birth', myBirthString);
-    await _prefs.setString('self_tip_data', jsonEncode(tip.toJson()));
+    await _prefs.setString('self_tip_cached_date_v2', todayString);
+    await _prefs.setString('self_tip_my_birth_v2', myBirthString);
+    await _prefs.setString('self_tip_data_v2', jsonEncode(tip.toJson()));
     logger.i('📥 새로운 자기 발견 팁을 캐시에 저장했습니다.');
 
     return tip;
