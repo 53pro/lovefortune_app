@@ -6,7 +6,6 @@ import 'package:lovefortune_app/core/constants/ad_constants.dart';
 import 'package:lovefortune_app/core/models/conflict_topic_model.dart';
 import 'package:lovefortune_app/core/models/personality_report_model.dart';
 import 'package:lovefortune_app/core/models/profile_model.dart';
-import 'package:lovefortune_app/features/main/main_screen.dart';
 import 'package:lovefortune_app/features/settings/settings_viewmodel.dart';
 import 'package:lovefortune_app/features/tips/conflict_guide_screen.dart';
 import 'package:lovefortune_app/features/tips/personality_report_screen.dart';
@@ -79,15 +78,6 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('관계 팁'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.casino_outlined),
-            tooltip: '팁 새로고침',
-            onPressed: () {
-              viewModel.fetchTips(forceRefresh: true);
-            },
-          ),
-        ],
       ),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -97,7 +87,7 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
           children: [
             _buildRelationshipGuideCard(context, ref, settingsState),
             const SizedBox(height: 16),
-            _buildWeeklyQuestionCard(state.weeklyQuestion),
+            _buildTodaysQuestionCard(state.todaysQuestion),
             const SizedBox(height: 16),
             if (_isNativeAdLoaded && _nativeAd != null)
               Container(
@@ -185,7 +175,7 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
     );
   }
 
-  Widget _buildWeeklyQuestionCard(String? question) {
+  Widget _buildTodaysQuestionCard(String? question) {
     return Card(
       elevation: 0,
       color: AppTheme.primary,
@@ -194,7 +184,7 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            const Text('이번 주 질문',
+            const Text('오늘의 질문',
                 style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -277,6 +267,73 @@ class _TipsScreenState extends ConsumerState<TipsScreen> {
                   );
                 },
               ),
+            if (topics.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              ref.watch(tipsViewModelProvider).isLoading
+                  ? const Center(
+                      child: SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: TextButton.icon(
+                        onPressed: !ref.watch(tipsViewModelProvider).canAddAdditionalTopic
+                            ? null
+                            : () async {
+                                try {
+                                  await ref
+                                      .read(tipsViewModelProvider.notifier)
+                                      .addAdditionalConflictTopic();
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('새로운 갈등 해결 가이드가 추가되었습니다.'),
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(e.toString().replaceAll('Exception: ', '')),
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                        style: TextButton.styleFrom(
+                          backgroundColor: ref.watch(tipsViewModelProvider).canAddAdditionalTopic
+                              ? AppTheme.primary.withOpacity(0.1)
+                              : AppTheme.hairline.withOpacity(0.3),
+                          foregroundColor: ref.watch(tipsViewModelProvider).canAddAdditionalTopic
+                              ? AppTheme.primary
+                              : AppTheme.muted,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: Icon(
+                          ref.watch(tipsViewModelProvider).canAddAdditionalTopic
+                              ? Icons.add_circle_outline
+                              : Icons.lock_outline,
+                          size: 18,
+                        ),
+                        label: Text(
+                          ref.watch(tipsViewModelProvider).canAddAdditionalTopic
+                              ? '오늘의 새로운 갈등 해결 가이드 추가'
+                              : '오늘의 추가 가이드 완료 (하루 1회)',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+            ],
           ],
         ),
       ),

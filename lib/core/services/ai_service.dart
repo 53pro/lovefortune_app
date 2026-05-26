@@ -87,11 +87,26 @@ class AIService {
     return ConflictGuideModel.fromJson(jsonContent);
   }
 
-  // 주간 질문을 요청하는 새로운 함수 (추가)
-  Future<String> getWeeklyQuestion(String userBirth, String partnerBirth) async {
-    final prompt = _buildWeeklyQuestionPrompt(userBirth, partnerBirth);
+  // 오늘의 질문을 요청하는 새로운 함수 (추가)
+  Future<String> getTodaysQuestion(String userBirth, String partnerBirth) async {
+    final prompt = _buildTodaysQuestionPrompt(userBirth, partnerBirth);
     final jsonContent = await _callApi(prompt);
-    return jsonContent['weekly_question'] as String? ?? '서로의 어린 시절 꿈에 대해 이야기해보세요.';
+    return jsonContent['todays_question'] as String? ?? '서로의 첫인상에 대해 이야기해보세요.';
+  }
+
+  // 오늘의 갈등 해결 주제 생성 API
+  Future<List<Map<String, dynamic>>> getTodaysConflictTopics(String userBirth, String partnerBirth) async {
+    final prompt = _buildConflictTopicsPrompt(userBirth, partnerBirth);
+    final jsonContent = await _callApi(prompt);
+    final List<dynamic> topicsJson = jsonContent['topics'] as List<dynamic>? ?? [];
+    return topicsJson.map((t) => Map<String, dynamic>.from(t)).toList();
+  }
+
+  // 추가적인 갈등 해결 주제 생성 API
+  Future<Map<String, dynamic>> getAdditionalConflictTopic(String userBirth, String partnerBirth, List<String> existingTopics) async {
+    final prompt = _buildAdditionalConflictTopicPrompt(userBirth, partnerBirth, existingTopics);
+    final jsonContent = await _callApi(prompt);
+    return Map<String, dynamic>.from(jsonContent);
   }
 
   // --- 각 기능별 프롬프트 생성 함수들 ---
@@ -270,31 +285,107 @@ class AIService {
     [갈등 주제]: $topic
     """;
   }
-  // 주간 질문 생성을 위한 새로운 프롬프트 (추가)
-  String _buildWeeklyQuestionPrompt(String userBirth, String partnerBirth) {
+  // 오늘의 질문 생성을 위한 새로운 프롬프트
+  String _buildTodaysQuestionPrompt(String userBirth, String partnerBirth) {
     return """
     ### #1. 역할 (Persona)
-    당신은 커플들의 대화를 유도하는 창의적인 질문 생성가입니다.
+    당신은 커플 관계 분석가이자 사주 명리학 지식을 활용하는 센스 있는 대화 상담사입니다.
 
     ### #2. 목표 (Goal)
-    입력된 두 사람의 생년월일을 바탕으로, 이번 주 두 사람이 함께 나누면 좋을 흥미롭고 깊이 있는 대화 주제를 **하나의 질문**으로 생성하여 아래 JSON 형식에 맞춰 출력합니다.
+    입력된 두 사람의 생년월일($userBirth, $partnerBirth) 사주 정보를 바탕으로, 오늘 두 사람이 함께 나누면 좋을 흥미진진한 대화 주제를 **자극적이고 호기심을 유발하는 딱 한 문장의 짧은 질문**으로 생성하여 아래 JSON 형식에 맞춰 출력합니다.
 
     ### #3. 지침 (Instructions)
-    - 질문은 서로의 가치관, 추억, 미래에 대해 이야기할 수 있는 개방형 질문이어야 합니다.
-    - 너무 무겁지 않으면서도, 관계에 긍정적인 영향을 줄 수 있는 질문을 만들어주세요.
-    - 예시: "우리가 함께 했던 여행 중에 가장 기억에 남는 순간은 언제야?", "10년 후, 우리는 어떤 모습일까?"
+    - 질문은 연인끼리 서로에게 편하게 물어볼 수 있는 친근하고 다정한 반말 구어체 형식이어야 합니다.
+    - 문장은 여러 문장으로 이어지지 않는 **짧은 단 한 문장(문장 하나)**으로만 구성해야 합니다.
+    - 사주 성향(예: 화 기운의 강렬함 vs 수 기운의 차분함)이나 연애 트렌드, MBTI, 연인 사이의 미묘한 갈등/질투 요소 등을 결합하여 다소 자극적이고 호기심 넘치는 매운맛 연애 밸런스/가치관 질문을 디자인해 주세요.
+    - 예시:
+      * "솔직히 나 말고 다른 사람한테 심장 쿵 내려앉아 본 적 있어?"
+      * "내가 다른 이성하고 웃으면서 길게 통화하면 질투 나, 아니면 쿨한 척 참을 거야?"
+      * "사주 궁합으로 볼 때 우리 기운이 가장 뜨겁게 불타오르는 순간은 언제라고 생각해?"
+      * "만약 내가 아무 말 없이 연락 끊기면, 바람피운다고 먼저 생각할 거야?"
+      * "나랑 헤어지면 너 다음 사람 만날 때 내 생각이 전혀 안 날 것 같아?"
 
     ### #4. 제약 조건 (Constraints)
+    - 반드시 하나의 완벽한 물음표(?)로 끝나는 단일 질문이어야 합니다. 두 문장 이상 결합하거나 접속사로 길게 연결하지 마세요.
+    - 너무 비관적이거나 파국을 조장하는 무거운 수위보다는, 연인끼리 장난치며 진지하게 대화할 수 있는 정도의 '자극적이고 흥미진진한' 수준으로 맞춰주세요.
     - 반드시 지정된 JSON 형식으로만 출력해야 합니다.
 
     ### #5. JSON 출력 형식
     {
-      "weekly_question": "(생성된 질문)"
+      "todays_question": "(생성된 질문)"
     }
 
     ### #6. 최종 요청 (Final Request)
     [사용자 생년월일]: $userBirth
     [파트너 생년월일]: $partnerBirth
+    """;
+  }
+
+  // 오늘의 갈등 해결 주제 생성을 위한 프롬프트
+  String _buildConflictTopicsPrompt(String userBirth, String partnerBirth) {
+    return """
+    ### #1. 역할 (Persona)
+    당신은 커플 관계 분석가이자 사주 명리학 지식을 활용하는 갈등 상담사입니다.
+
+    ### #2. 목표 (Goal)
+    입력된 두 사람의 생년월일($userBirth, $partnerBirth) 사주 정보를 분석하여, 두 사람의 타고난 사주 오행/성향적 차이(상생상극 관계)에서 비롯될 수 있는 갈등 주제 3가지를 생성하여 아래 지정된 JSON 형식으로 출력합니다.
+
+    ### #3. 지침 (Instructions)
+    1. 두 사람의 사주 오행적 상극이나 성향적 불균형(예: 화 기운의 급함 vs 수 기운의 차분함, 목 기운의 추진력 vs 금 기운의 꼼꼼함 등)에서 기인할 수 있는 현실적인 갈등 주제 3가지를 선별하세요.
+    2. 각 주제는 다음과 같은 요소들을 가져야 합니다:
+       - id: "1", "2", "3" 등 고유 식별자 (문자열)
+       - category: 갈등의 카테고리 (예: "소통", "연락", "가치관", "데이트", "생활 습관", "애정 표현")
+       - topic: 두 사람의 성향 차이를 자극적이고 호기심을 유발하도록 빗댄 **짧은 질문 형식** (예: "연락 안 되면 바람피운다고 의심하는 성향?", "갑자기 데이트 약속을 깨는 상대방, 참아야 할까?", "내 사주의 불 기운과 너의 물 기운 차이로 인한 소통 단절?"). 절대 설명조로 길어지지 않게 한눈에 들어오는 짧고 자극적이며 호기심을 유발하는 질문으로 작성하세요.
+
+    ### #4. 제약 조건 (Constraints)
+    - 갈등 주제의 제목(`topic`) 속에 두 사람의 사주 오행 또는 사주 성향적 특징(예: 화 기운, 금 기운, 물과 불의 성향 등)이 은유적이든 직접적이든 자연스럽게 녹아있어야 합니다.
+    - 반드시 하나의 완벽한 물음표(?)로 끝나는 짧은 질문 형태여야 합니다.
+    - 반드시 지정된 JSON 형식으로만 출력해야 합니다.
+    - 너무 비관적이거나 헤어짐을 종용하는 주제는 피하고, 서로 이해하고 맞춰갈 수 있는 현실적인 질문으로 선정하세요.
+
+    ### #5. JSON 출력 형식
+    {
+      "topics": [
+        {
+          "id": "1",
+          "category": "연락",
+          "topic": "화(火)와 수(水) 성향 차이로 인한 연락 의심, 이대로 괜찮을까?"
+        },
+        ...
+      ]
+    }
+    """;
+  }
+
+  // 추가적인 갈등 해결 주제 생성을 위한 프롬프트
+  String _buildAdditionalConflictTopicPrompt(String userBirth, String partnerBirth, List<String> existingTopics) {
+    final existingTopicsStr = existingTopics.join(", ");
+    return """
+    ### #1. 역할 (Persona)
+    당신은 커플 관계 분석가이자 사주 명리학 지식을 활용하는 갈등 상담사입니다.
+
+    ### #2. 목표 (Goal)
+    입력된 두 사람의 생년월일($userBirth, $partnerBirth) 사주 정보를 분석하여, 두 사람의 타고난 사주 오행/성향적 차이에서 비롯될 수 있는 새로운 갈등 주제 1가지를 생성하여 아래 지정된 JSON 형식으로 출력합니다.
+
+    ### #3. 지침 (Instructions)
+    1. 다음 리스트는 이미 생성된 갈등 주제들입니다. 이 주제들과 **전혀 겹치지 않고 유사하지 않은 새로운 갈등 주제 1가지**를 선정해 주세요:
+       - 이미 생성된 주제: [$existingTopicsStr]
+    2. 생성할 주제는 다음과 같은 요소들을 가져야 합니다:
+       - category: 갈등의 카테고리 (예: "소통", "연락", "가치관", "데이트", "생활 습관", "애정 표현")
+       - topic: 두 사람의 성향 차이를 자극적이고 호기심을 유발하도록 빗댄 **짧은 질문 형식** (예: "연락 안 되면 바람피운다고 의심하는 성향?", "갑자기 데이트 약속을 깨는 상대방, 참아야 할까?", "내 사주의 불 기운과 너의 물 기운 차이로 인한 소통 단절?"). 절대 설명조로 길어지지 않게 한눈에 들어오는 짧고 자극적이며 호기심을 유발하는 질문으로 작성하세요.
+
+    ### #4. 제약 조건 (Constraints)
+    - 기존 주제 [$existingTopicsStr]와 내용 및 소재 면에서 명확히 차이가 있어야 합니다.
+    - 갈등 주제의 제목(`topic`) 속에 두 사람의 사주 오행 또는 사주 성향적 특징(예: 화 기운, 금 기운, 물과 불의 성향 등)이 은유적이든 직접적이든 자연스럽게 녹아있어야 합니다.
+    - 반드시 하나의 완벽한 물음표(?)로 끝나는 짧은 질문 형태여야 합니다.
+    - 반드시 지정된 JSON 형식으로만 출력해야 합니다.
+    - 너무 비관적이거나 헤어짐을 종용하는 주제는 피하고, 서로 이해하고 맞춰갈 수 있는 현실적인 질문으로 선정하세요.
+
+    ### #5. JSON 출력 형식
+    {
+      "category": "연락",
+      "topic": "화(火)와 수(水) 성향 차이로 인한 연락 의심, 이대로 괜찮을까?"
+    }
     """;
   }
 }
