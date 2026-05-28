@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lovefortune_app/features/settings/partner_list_screen.dart';
 import 'package:lovefortune_app/features/settings/profile_edit_screen.dart';
 import 'package:lovefortune_app/features/settings/settings_viewmodel.dart';
+import 'package:lovefortune_app/features/settings/legal_detail_screen.dart';
 import 'package:lovefortune_app/core/theme/app_theme.dart';
 
 // StatefulWidget에서 간단한 ConsumerWidget으로 변경합니다.
@@ -103,6 +104,32 @@ class SettingsScreen extends ConsumerWidget {
                     leading: Icon(Icons.info_outline),
                     title: Text('앱 버전'),
                     trailing: Text('1.0.0'),
+                  ),
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  ListTile(
+                    leading: const Icon(Icons.description_outlined),
+                    title: const Text('이용약관'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const LegalDetailScreen(type: LegalType.terms),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  ListTile(
+                    leading: const Icon(Icons.privacy_tip_outlined),
+                    title: const Text('개인정보 처리방침'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const LegalDetailScreen(type: LegalType.privacy),
+                        ),
+                      );
+                    },
                   ),
                   const Divider(height: 1, indent: 16, endIndent: 16),
                   ListTile(

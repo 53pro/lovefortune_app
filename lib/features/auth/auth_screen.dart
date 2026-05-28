@@ -2,6 +2,7 @@ import 'package:lovefortune_app/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lovefortune_app/features/auth/auth_viewmodel.dart';
+import 'package:lovefortune_app/features/settings/legal_detail_screen.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
@@ -123,6 +124,51 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             ),
           ),
         ),
+        const SizedBox(height: 24),
+        _buildLegalNotice(),
+      ],
+    );
+  }
+
+  Widget _buildLegalNotice() {
+    const linkStyle = TextStyle(
+      fontSize: 12,
+      color: AppTheme.ink,
+      fontWeight: FontWeight.bold,
+      decoration: TextDecoration.underline,
+    );
+    const normalStyle = TextStyle(
+      fontSize: 12,
+      color: AppTheme.muted,
+    );
+
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        const Text('로그인 진행 시 ', style: normalStyle),
+        GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const LegalDetailScreen(type: LegalType.terms),
+              ),
+            );
+          },
+          child: const Text('이용약관', style: linkStyle),
+        ),
+        const Text(' 및 ', style: normalStyle),
+        GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const LegalDetailScreen(type: LegalType.privacy),
+              ),
+            );
+          },
+          child: const Text('개인정보 처리방침', style: linkStyle),
+        ),
+        const Text('에 동의하는 것으로 간주됩니다.', style: normalStyle),
       ],
     );
   }
